@@ -324,8 +324,8 @@ declarationPartList: declarationPart
 
 declarationPart: Id {wcout << "Dim " << $1.token.svalue << endl;}
     | Id '=' expression {wcout << "Dim " << $1.token.svalue << endl;}
-//    | Id As type {wcout << "Dim " << $1.token.svalue << endl;}
-//    | Id As type '=' expression {wcout << "Dim " << $1.token.svalue << endl;}
+    | Id As type {wcout << "Dim " << $1.token.svalue << endl;}
+    | Id As type '=' expression {wcout << "Dim " << $1.token.svalue << endl;}
     ;
 
 statementList: statement
@@ -395,7 +395,7 @@ toplevel_expression: StringLiteral
     | ATn '(' expression ')'
     | Cos '(' expression ')'
     | CBool '(' expression ')'
-    | CU8 '(' expression ')'
+    | CU8/*=CByte*/ '(' expression ')'
     | CU16 '(' expression ')'
     | CU32 '(' expression ')'
     | CU64 '(' expression ')'
@@ -407,10 +407,45 @@ toplevel_expression: StringLiteral
     | CI16 '(' expression ')'
     | CI32 '(' expression ')'
     | CI64 '(' expression ')'
-//    | Cast '(' type ',' expression ')'
+    | Cast '(' type ',' expression ')'
     | Id
     | Instr '(' expression ',' expression ')'
     | Instr '(' expression ',' expression ',' expression ')'
+    ;
+
+fn_arg_list:
+    | fn_arg_list_non_empty
+    ;
+
+fn_arg_list_non_empty: expression
+    | fn_arg_list_non_empty ',' expression
+    ;
+
+fn_decl_arg_list:
+    | fn_decl_arg_list_non_empty
+    ;
+
+fn_decl_arg_list_non_empty: Id As type
+    | As type
+    | fn_decl_arg_list_non_empty ',' As type
+    | fn_decl_arg_list_non_empty ',' Id As type
+    ;
+
+type: Boolean
+    | Integer
+    | Int8
+    | Int16
+    | Int32
+    | Int64
+    | Single
+    | String
+    | UInt8/*= Byte*/
+    | UInt16
+    | UInt32
+    | UInt64
+    | Function '(' fn_decl_arg_list ')' As type
+    | Sub '(' fn_decl_arg_list ')'
+    | Id
     ;
 
 newLine: '\n'
