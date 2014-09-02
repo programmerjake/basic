@@ -1,0 +1,8 @@
+*.layout
+*.depend
+*~
+*.parser.h
+*.parser.cpp
+bin
+obj
+

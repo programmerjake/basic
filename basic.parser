@@ -1,0 +1,825 @@
+%{
+#include <cstdint>
+#include <cwchar>
+#include <string>
+#include <memory>
+#include <iostream>
+
+using namespace std;
+
+struct Location final
+{
+    size_t line, col;
+    Location()
+        : line(1), col(1)
+    {
+    }
+    Location(size_t line, size_t col)
+        : line(line), col(col)
+    {
+    }
+};
+
+struct InputStream
+{
+    InputStream(const InputStream &rt) = delete;
+    void operator =(const InputStream &rt) = delete;
+    InputStream()
+    {
+    }
+    virtual ~InputStream()
+    {
+    }
+    virtual int getChar() = 0;
+    virtual wstring getName() = 0;
+};
+
+enum class TokenType : int_fast32_t
+{
+    TTEOF = -0x10000,
+    TTId,
+    TTStringLiteral,
+    TTIntegerLiteral,
+    TTSingleLiteral,
+    TTDoubleLiteral,
+
+    TTLogicalGE,
+    TTLogicalLE,
+    TTLogicalNE,
+
+    TTAbs,
+    TTAnd,
+    TTAs,
+    TTAsc,
+    TTATn,
+    TTBoolean,
+    TTByRef,
+    TTByVal,
+    TTCase,
+    TTCast,
+    TTCBool,
+    TTCDouble,
+    TTCInt,
+    TTCI8,
+    TTCI16,
+    TTCI32,
+    TTCI64,
+    TTCPtr,
+    TTCSng,
+    TTCStr,
+    TTCU8,
+    TTCByte = TTCU8,
+    TTCU16,
+    TTCU32,
+    TTCU64,
+    TTChr,
+    TTCos,
+    TTDim,
+    TTDeclare,
+    TTDo,
+    TTDouble,
+    TTElse,
+    TTElseIf,
+    TTEnd,
+    TTExit,
+    TTExp,
+    TTFalse,
+    TTFor,
+    TTFunction,
+    TTHex,
+    TTIf,
+    TTInStr,
+    TTInt,
+    TTInteger,
+    TTInt8,
+    TTInt16,
+    TTInt32,
+    TTInt64,
+    TTIs,
+    TTLBound,
+    TTLCase,
+    TTLeft,
+    TTLen,
+    TTLog,
+    TTLoop,
+    TTLTrim,
+    TTMid,
+    TTMod,
+    TTNot,
+    TTOct,
+    TTOr,
+    TTPointer,
+    TTRight,
+    TTRTrim,
+    TTSelect,
+    TTSgn,
+    TTSin,
+    TTSingle,
+    TTSpace,
+    TTSqr,
+    TTStatic,
+    TTStep,
+    TTStr,
+    TTString,
+    TTSub,
+    TTTan,
+    TTThen,
+    TTTo,
+    TTTrue,
+    TTType,
+    TTUBound,
+    TTUCase,
+    TTUInt8,
+    TTByte = TTUInt8,
+    TTUInt16,
+    TTUInt32,
+    TTUInt64,
+    TTUntil,
+    TTVal,
+    TTWEnd,
+    TTWhile,
+    TTXor,
+};
+
+struct Token final
+{
+    Location location;
+    TokenType type;
+    wstring svalue;
+    explicit Token(TokenType type = TokenType::TTEOF, Location location = Location(), wstring svalue = L"")
+        : location(location), type(type), svalue(svalue)
+    {
+    }
+    void addChar(int ch)
+    {
+        wchar_t wch = ch;
+        if(ch != (int)wch) // if wchar_t is 16 bit and ch won't fit then encode using surrogate pair
+        {
+            ch -= 0x10000;
+            svalue += (wchar_t)(0xD800 + ((ch >> 10) & 0x3FF));
+            svalue += (wchar_t)(0xDC00 + (ch & 0x3FF));
+        }
+        else
+            svalue += wch;
+    }
+};
+
+struct ASTNode
+{
+
+};
+
+struct ParserValueType final
+{
+    Token token;
+    shared_ptr<ASTNode> node;
+    explicit ParserValueType(TokenType tokenType = TokenType::TTEOF)
+        : token(tokenType), node(nullptr)
+    {
+    }
+    explicit ParserValueType(char tokenType)
+        : token((TokenType)tokenType), node(nullptr)
+    {
+    }
+    explicit ParserValueType(Token token)
+        : token(token), node(nullptr)
+    {
+    }
+    explicit ParserValueType(shared_ptr<ASTNode> node)
+        : token(), node(node)
+    {
+    }
+    bool operator ==(const ParserValueType &rt) const
+    {
+        return token.type == rt.token.type && node == rt.node;
+    }
+    bool operator !=(const ParserValueType &rt) const
+    {
+        return token.type != rt.token.type || node != rt.node;
+    }
+};
+
+ParserValueType parseAll(shared_ptr<InputStream> is);
+
+%}
+%option SymbolPrefix "TokenType::TT"
+%option ValueType "ParserValueType"
+%option "UseC++11"
+%option "ClassName" "ParserBase"
+%token Id
+%token StringLiteral
+%token IntegerLiteral
+%token SingleLiteral
+%token DoubleLiteral
+%token LogicalGE
+%token LogicalLE
+%token LogicalNE
+%token Abs
+%token And
+%token As
+%token Asc
+%token ATn
+%token Boolean
+%token ByRef
+%token ByVal
+%token Case
+%token Cast
+%token CBool
+%token CDouble
+%token CInt
+%token CI8
+%token CI16
+%token CI32
+%token CI64
+%token CPtr
+%token CSng
+%token CStr
+%token CU8
+%token CByte
+%token CU16
+%token CU32
+%token CU64
+%token Chr
+%token Cos
+%token Dim
+%token Declare
+%token Do
+%token Double
+%token Else
+%token ElseIf
+%token End
+%token Exit
+%token Exp
+%token False
+%token For
+%token Function
+%token Hex
+%token If
+%token InStr
+%token Int
+%token Integer
+%token Int8
+%token Int16
+%token Int32
+%token Int64
+%token Is
+%token LBound
+%token LCase
+%token Left
+%token Len
+%token Log
+%token Loop
+%token LTrim
+%token Mid
+%token Mod
+%token Not
+%token Oct
+%token Or
+%token Pointer
+%token Right
+%token RTrim
+%token Select
+%token Sgn
+%token Sin
+%token Single
+%token Space
+%token Sqr
+%token Static
+%token Step
+%token Str
+%token String
+%token Sub
+%token Tan
+%token Then
+%token To
+%token True
+%token Type
+%token UBound
+%token UCase
+%token UInt8
+%token Byte
+%token UInt16
+%token UInt32
+%token UInt64
+%token Until
+%token Val
+%token WEnd
+%token While
+%token Xor
+%%
+
+program:
+    | newLine
+    | program declaration newLine
+    | program statementList newLine
+    ;
+
+declaration: Dim
+    | Dim declarationPartList
+    ;
+
+declarationPartList: declarationPart
+    | declarationPartList ',' declarationPart
+    ;
+
+declarationPart: Id {wcout << "Dim " << $1.token.svalue << endl;}
+    | Id '=' expression {wcout << "Dim " << $1.token.svalue << endl;}
+//    | Id As type {wcout << "Dim " << $1.token.svalue << endl;}
+//    | Id As type '=' expression {wcout << "Dim " << $1.token.svalue << endl;}
+    ;
+
+statementList: statement
+    | statementList ':' statement
+    ;
+
+statement: End
+    | Id '=' expression
+    ;
+
+expression: or_expression
+    ;
+
+or_expression: xor_expression
+    | or_expression Or xor_expression
+    ;
+
+xor_expression: and_expression
+    | xor_expression Xor and_expression
+    ;
+
+and_expression: not_expression
+    | and_expression And not_expression
+    ;
+
+not_expression: compare_expression
+    | Not compare_expression
+    ;
+
+compare_expression: add_expression
+    | compare_expression '<' add_expression
+    | compare_expression '>' add_expression
+    | compare_expression LogicalLE add_expression
+    | compare_expression LogicalGE add_expression
+    | compare_expression '=' add_expression
+    | compare_expression LogicalNE add_expression
+    ;
+
+add_expression: mod_expression
+    | add_expression '+' mod_expression
+    | add_expression '-' mod_expression
+    ;
+
+mod_expression: mul_expression
+    | mod_expression Mod mul_expression
+    | mod_expression '\\' mul_expression
+    ;
+
+mul_expression: neg_expression
+    | mul_expression '*' neg_expression
+    | mul_expression '/' neg_expression
+    ;
+
+neg_expression: toplevel_expression
+    | '-' neg_expression
+    | '+' neg_expression
+    ;
+
+toplevel_expression: StringLiteral
+    | IntegerLiteral
+    | SingleLiteral
+    | DoubleLiteral
+    | True
+    | False
+    | '(' expression ')'
+    | Abs '(' expression ')'
+    | ATn '(' expression ')'
+    | Cos '(' expression ')'
+    | CBool '(' expression ')'
+    | CU8 '(' expression ')'
+    | CU16 '(' expression ')'
+    | CU32 '(' expression ')'
+    | CU64 '(' expression ')'
+    | CSng '(' expression ')'
+    | CStr '(' expression ')'
+    | CDbl '(' expression ')'
+    | CInt '(' expression ')'
+    | CI8 '(' expression ')'
+    | CI16 '(' expression ')'
+    | CI32 '(' expression ')'
+    | CI64 '(' expression ')'
+//    | Cast '(' type ',' expression ')'
+    | Id
+    | Instr '(' expression ',' expression ')'
+    | Instr '(' expression ',' expression ',' expression ')'
+    ;
+
+newLine: '\n'
+    | newLine '\n'
+    ;
+%%
+%{
+#include <cwctype>
+#include <cassert>
+#include <sstream>
+#include "string_cast.h"
+
+using namespace std;
+
+class Tokenizer final
+{
+    Tokenizer(const Tokenizer &rt) = delete;
+    void operator =(const Tokenizer &rt) = delete;
+    Location location;
+    shared_ptr<InputStream> input;
+    int peekChar;
+    function<void(Location, const wstring &)> handleError;
+    static constexpr size_t TabWidth = 8;
+    void nextChar()
+    {
+        switch(peekChar)
+        {
+        case '\t':
+            location.col -= (location.col - 1) % TabWidth;
+            location.col += TabWidth;
+            break;
+        case '\n':
+            location.line++;
+            location.col = 1;
+            break;
+        default:
+            location.col++;
+            break;
+        }
+        peekChar = input->getChar();
+    }
+    int getChar()
+    {
+        int retval = peekChar;
+        nextChar();
+        return retval;
+    }
+    static bool iswodigit(wint_t v)
+    {
+        if(v >= '0' && v <= '7')
+            return true;
+        return false;
+    }
+    Token readNumber(Location tokenLocation)
+    {
+        Token retval = Token(TokenType::TTIntegerLiteral, tokenLocation);
+        if(peekChar == '&')
+        {
+            retval.addChar(getChar());
+            if(peekChar == 'h' || peekChar == 'H')
+            {
+                retval.addChar(towupper(getChar()));
+                if(!iswxdigit(peekChar))
+                    handleError(location, L"missing hexadecimal digit");
+                while(iswxdigit(peekChar))
+                {
+                    retval.addChar(towupper(getChar()));
+                }
+                return retval;
+            }
+            else if(iswodigit(peekChar) || peekChar == 'o' || peekChar == 'O')
+            {
+                if(peekChar == 'o' || peekChar == 'O')
+                    nextChar();
+                retval.addChar(L'O');
+                if(!iswodigit(peekChar))
+                {
+                    if(iswdigit(peekChar))
+                        handleError(location, L"digit is not valid octal digit");
+                    else
+                        handleError(location, L"missing octal digit");
+                }
+                while(iswodigit(peekChar))
+                {
+                    retval.addChar(getChar());
+                }
+                if(iswdigit(peekChar))
+                    handleError(location, L"digit is not valid octal digit");
+                return retval;
+            }
+            retval.type = (TokenType)retval.svalue[0];
+            return retval;
+        }
+        while(iswdigit(peekChar))
+        {
+            retval.addChar(getChar());
+        }
+        if(peekChar == '.')
+        {
+            retval.type = TokenType::TTDoubleLiteral;
+            retval.addChar(getChar());
+            if(retval.svalue == L"." && !iswdigit(peekChar))
+            {
+                retval.type = (TokenType)'.';
+                return retval;
+            }
+            while(iswdigit(peekChar))
+            {
+                retval.addChar(getChar());
+            }
+        }
+        if(peekChar == 'e' || peekChar == 'E' || peekChar == 'f' || peekChar == 'F')
+        {
+            if(peekChar == 'f' || peekChar == 'F')
+                retval.type = TokenType::TTSingleLiteral;
+            else
+                retval.type = TokenType::TTDoubleLiteral;
+            retval.addChar(getChar());
+            if(peekChar == '+' || peekChar == '-')
+                retval.addChar(getChar());
+            if(!iswdigit(peekChar))
+                handleError(location, L"missing decimal digit");
+            while(iswdigit(peekChar))
+            {
+                retval.addChar(getChar());
+            }
+        }
+        if(peekChar == '!' || peekChar == '#')
+        {
+            switch(getChar())
+            {
+            case '!':
+                retval.type = TokenType::TTSingleLiteral;
+                break;
+            case '#':
+                retval.type = TokenType::TTSingleLiteral;
+                break;
+            default:
+                assert(false);
+            }
+        }
+        return retval;
+    }
+    static int compareCaseInsensitive(const wstring &a, const wstring &b)
+    {
+        for(size_t i = 0; i < a.size() && i < b.size(); i++)
+        {
+            wchar_t ach = (wchar_t)towlower(a[i]);
+            wchar_t bch = (wchar_t)towlower(b[i]);
+            if(ach < bch)
+                return -1;
+            if(ach > bch)
+                return 1;
+        }
+        if(a.size() < b.size())
+            return -1;
+        if(a.size() > b.size())
+            return 1;
+        return 0;
+    }
+    void translateKeyword(Token &token)
+    {
+        struct Translation final
+        {
+            wstring name;
+            TokenType type;
+        };
+        static const Translation translations[] = // must be kept in sorted order
+        {
+            {L"Abs", TokenType::TTAbs},
+            {L"And", TokenType::TTAnd},
+            {L"As", TokenType::TTAs},
+            {L"Asc", TokenType::TTAsc},
+            {L"ATn", TokenType::TTATn},
+            {L"Boolean", TokenType::TTBoolean},
+            {L"ByRef", TokenType::TTByRef},
+            {L"Byte", TokenType::TTByte},
+            {L"ByVal", TokenType::TTByVal},
+            {L"Case", TokenType::TTCase},
+            {L"Cast", TokenType::TTCast},
+            {L"CBool", TokenType::TTCBool},
+            {L"CByte", TokenType::TTCByte},
+            {L"CDouble", TokenType::TTCDouble},
+            {L"Chr", TokenType::TTChr},
+            {L"CI16", TokenType::TTCI16},
+            {L"CI32", TokenType::TTCI32},
+            {L"CI64", TokenType::TTCI64},
+            {L"CI8", TokenType::TTCI8},
+            {L"CInt", TokenType::TTCInt},
+            {L"Cos", TokenType::TTCos},
+            {L"CPtr", TokenType::TTCPtr},
+            {L"CSng", TokenType::TTCSng},
+            {L"CStr", TokenType::TTCStr},
+            {L"CU16", TokenType::TTCU16},
+            {L"CU32", TokenType::TTCU32},
+            {L"CU64", TokenType::TTCU64},
+            {L"CU8", TokenType::TTCU8},
+            {L"Declare", TokenType::TTDeclare},
+            {L"Dim", TokenType::TTDim},
+            {L"Do", TokenType::TTDo},
+            {L"Double", TokenType::TTDouble},
+            {L"Else", TokenType::TTElse},
+            {L"ElseIf", TokenType::TTElseIf},
+            {L"End", TokenType::TTEnd},
+            {L"Exit", TokenType::TTExit},
+            {L"Exp", TokenType::TTExp},
+            {L"False", TokenType::TTFalse},
+            {L"For", TokenType::TTFor},
+            {L"Function", TokenType::TTFunction},
+            {L"Hex", TokenType::TTHex},
+            {L"If", TokenType::TTIf},
+            {L"InStr", TokenType::TTInStr},
+            {L"Int", TokenType::TTInt},
+            {L"Int16", TokenType::TTInt16},
+            {L"Int32", TokenType::TTInt32},
+            {L"Int64", TokenType::TTInt64},
+            {L"Int8", TokenType::TTInt8},
+            {L"Integer", TokenType::TTInteger},
+            {L"Is", TokenType::TTIs},
+            {L"LBound", TokenType::TTLBound},
+            {L"LCase", TokenType::TTLCase},
+            {L"Left", TokenType::TTLeft},
+            {L"Len", TokenType::TTLen},
+            {L"Log", TokenType::TTLog},
+            {L"Loop", TokenType::TTLoop},
+            {L"LTrim", TokenType::TTLTrim},
+            {L"Mid", TokenType::TTMid},
+            {L"Mod", TokenType::TTMod},
+            {L"Not", TokenType::TTNot},
+            {L"Oct", TokenType::TTOct},
+            {L"Or", TokenType::TTOr},
+            {L"Pointer", TokenType::TTPointer},
+            {L"Right", TokenType::TTRight},
+            {L"RTrim", TokenType::TTRTrim},
+            {L"Select", TokenType::TTSelect},
+            {L"Sgn", TokenType::TTSgn},
+            {L"Sin", TokenType::TTSin},
+            {L"Single", TokenType::TTSingle},
+            {L"Space", TokenType::TTSpace},
+            {L"Sqr", TokenType::TTSqr},
+            {L"Static", TokenType::TTStatic},
+            {L"Step", TokenType::TTStep},
+            {L"Str", TokenType::TTStr},
+            {L"String", TokenType::TTString},
+            {L"Sub", TokenType::TTSub},
+            {L"Tan", TokenType::TTTan},
+            {L"Then", TokenType::TTThen},
+            {L"To", TokenType::TTTo},
+            {L"True", TokenType::TTTrue},
+            {L"Type", TokenType::TTType},
+            {L"UBound", TokenType::TTUBound},
+            {L"UCase", TokenType::TTUCase},
+            {L"UInt16", TokenType::TTUInt16},
+            {L"UInt32", TokenType::TTUInt32},
+            {L"UInt64", TokenType::TTUInt64},
+            {L"UInt8", TokenType::TTUInt8},
+            {L"Until", TokenType::TTUntil},
+            {L"Val", TokenType::TTVal},
+            {L"WEnd", TokenType::TTWEnd},
+            {L"While", TokenType::TTWhile},
+            {L"Xor", TokenType::TTXor},
+        };
+        size_t translationCount = sizeof(translations) / sizeof(translations[0]);
+        int start = 0, end = translationCount - 1;
+        while(start <= end)
+        {
+            int middle = start + (end - start) / 2;
+            int comparisonResult = compareCaseInsensitive(token.svalue, translations[middle].name);
+            if(comparisonResult == 0)
+            {
+                token.svalue = translations[middle].name;
+                token.type = translations[middle].type;
+                break;
+            }
+            else if(comparisonResult < 0)
+            {
+                end = middle - 1;
+            }
+            else
+            {
+                start = middle + 1;
+            }
+        }
+    }
+public:
+    explicit Tokenizer(shared_ptr<InputStream> input, function<void(Location, const wstring &)> handleError)
+        : input(input), peekChar(input->getChar()), handleError(handleError)
+    {
+    }
+    Token getToken()
+    {
+        for(;;)
+        {
+            while(iswblank(peekChar))
+                nextChar();
+            Location tokenLocation = location;
+            if(iswdigit(peekChar))
+                return readNumber(tokenLocation);
+            if(iswalpha(peekChar) || peekChar == '_')
+            {
+                Token retval = Token(TokenType::TTId, tokenLocation);
+                while(iswalnum(peekChar) || peekChar == '_')
+                {
+                    retval.addChar(getChar());
+                }
+                translateKeyword(retval);
+                if(retval.svalue == L"_")
+                {
+                    while(iswblank(peekChar))
+                        nextChar();
+                    if(peekChar == '\n')
+                    {
+                        nextChar();
+                        continue;
+                    }
+                }
+                return retval;
+            }
+            switch(peekChar)
+            {
+            case EOF:
+                return Token(TokenType::TTEOF, tokenLocation);
+            case '\n':
+            case '(':
+            case ')':
+            case '^':
+            case '*':
+            case '@':
+            case '#':
+            case '-':
+            case '+':
+            case '=':
+            case '\\':
+            case '/':
+            case ';':
+            case ':':
+            case ',':
+                return Token((TokenType)getChar(), tokenLocation);
+            case '.':
+            case '&':
+                return readNumber(tokenLocation);
+            case '\"':
+            {
+                Token retval(TokenType::TTStringLiteral, tokenLocation);
+                nextChar();
+                while(peekChar != EOF && peekChar != '\n')
+                {
+                    if(peekChar == '\"')
+                    {
+                        nextChar();
+                        if(peekChar != '\"')
+                        {
+                            return retval;
+                        }
+                    }
+                    retval.addChar(getChar());
+                }
+                handleError(location, L"missing closing \"");
+                return Token(TokenType::TTEOF, tokenLocation);
+            }
+            case '>':
+                nextChar();
+                if(peekChar == '=')
+                {
+                    nextChar();
+                    return Token(TokenType::TTLogicalGE, tokenLocation);
+                }
+                return Token((TokenType)'>', tokenLocation);
+            case '<':
+                nextChar();
+                if(peekChar == '=')
+                {
+                    nextChar();
+                    return Token(TokenType::TTLogicalLE, tokenLocation);
+                }
+                if(peekChar == '>')
+                {
+                    nextChar();
+                    return Token(TokenType::TTLogicalNE, tokenLocation);
+                }
+                return Token((TokenType)'<', tokenLocation);
+            default:
+                handleError(location, L"invalid character");
+                return Token(TokenType::TTEOF, tokenLocation);
+            }
+            assert(false);
+            break;
+        }
+    }
+};
+
+class Parser : public ParserBase
+{
+    Tokenizer tokenizer;
+public:
+    explicit Parser(shared_ptr<InputStream> is)
+        : tokenizer(is, [=](Location location, const wstring &msg){wostringstream ss; ss << is->getName() << L":" << location.line << L":" << location.col << L": " << msg; throw ParseError(string_cast<string>(ss.str()));})
+    {
+    }
+protected:
+    virtual ParserValueType getToken() override
+    {
+        return ParserValueType(tokenizer.getToken());
+    }
+};
+
+ParserValueType parseAll(shared_ptr<InputStream> is)
+{
+    return Parser(is).parse();
+}
+
+%}
