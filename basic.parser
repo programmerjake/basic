@@ -314,8 +314,29 @@ program:
     | program statementList newLine
     ;
 
-declaration: Dim
+variableDeclaration: Dim
     | Dim declarationPartList
+    ;
+
+declaration: variableDeclaration
+    | Type Id newLine typeDefinitionBlock End Type
+    | procedureDefinition
+    ;
+
+typeDefinitionBlock:
+    | typeDefinitionPartList newLine
+    ;
+
+typeDefinitionPartList: typeDefinitionPart
+    | typeDefinitionPartList ',' typeDefinitionPart
+    ;
+
+procedureDefinition: Sub Id '(' fn_decl_arg_list ')' codeBlockWithNewLine End Sub
+    | Function Id '(' fn_decl_arg_list ')' As type codeBlockWithNewLine End Function
+    ;
+
+typeDefinitionPart: Id As type
+    | procedureDefinition
     ;
 
 declarationPartList: declarationPart
@@ -328,12 +349,53 @@ declarationPart: Id {wcout << "Dim " << $1.token.svalue << endl;}
     | Id As type '=' expression {wcout << "Dim " << $1.token.svalue << endl;}
     ;
 
-statementList: statement
-    | statementList ':' statement
+codeBlockWithNewLine: newLine
+    | codeBlockWithNewLine statementList newLine
+    | codeBlockWithNewLine variableDeclaration newLine
     ;
 
-statement: End
-    | Id '=' expression
+statementList: statement
+    | restOfLineStatementList
+    ;
+
+restOfLineStatementList: inlineStatementList
+    | inlineStatementList ':' restOfLineStatement
+    | restOfLineStatement
+    ;
+
+inlineStatementList: inlineStatement
+    | inlineStatementList ':' inlineStatement
+    ;
+
+statement: If expression Then codeBlockWithNewLine elseSection End If
+    | Do While expression codeBlockWithNewLine Loop
+    | Do Until expression codeBlockWithNewLine Loop
+    | Do codeBlockWithNewLine Loop While expression
+    | Do codeBlockWithNewLine Loop Until expression
+    | Do codeBlockWithNewLine Loop
+    | While expression codeBlockWithNewLine WEnd
+    | For variable '=' expression To expression codeBlockWithNewLine Next
+    | For variable '=' expression To expression Step expression codeBlockWithNewLine Next
+    | For Dim Id '=' expression To expression codeBlockWithNewLine Next
+    | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next
+    ;
+
+inlineStatement: variable '=' expression
+    | Exit Do
+    | Exit While
+    | Exit For
+    | Exit Function
+    | Exit Sub
+    | variable '(' fn_arg_list ')'
+    ;
+
+restOfLineStatement: If expression Then restOfLineStatementList
+    | If expression Then inlineStatementList Else restOfLineStatementList
+    ;
+
+elseSection:
+    | Else codeBlockWithNewLine
+    | ElseIf expression Then codeBlockWithNewLine elseSection
     ;
 
 expression: or_expression
@@ -409,8 +471,15 @@ toplevel_expression: StringLiteral
     | CI64 '(' expression ')'
     | Cast '(' type ',' expression ')'
     | Id
+    | toplevel_expression '[' expression ']'
+    | toplevel_expression '(' fn_arg_list ')'
     | Instr '(' expression ',' expression ')'
     | Instr '(' expression ',' expression ',' expression ')'
+    ;
+
+variable: '(' variable ')'
+    | Id
+    | variable '[' expression ']'
     ;
 
 fn_arg_list:
