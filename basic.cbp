@@ -32,12 +32,18 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 			<Add option="-fexceptions" />
+			<Add directory="." />
 		</Compiler>
+		<Unit filename="ast/all.h" />
+		<Unit filename="ast/base.h" />
+		<Unit filename="ast/symbol_table.h" />
+		<Unit filename="ast/type.h" />
+		<Unit filename="ast/type_integer.h" />
 		<Unit filename="basic.parser">
 			<Option compile="1" />
 			<Option link="1" />
 			<Option weight="40" />
-			<Option compiler="gcc" use="1" buildCommand="parser-generator basic.parser &amp;&amp; $compiler $options $includes -c basic.parser.cpp -o $object" />
+			<Option compiler="gcc" use="1" buildCommand="parser-generator -v basic.parser &amp;&amp; $compiler $options $includes -c basic.parser.cpp -o $object" />
 		</Unit>
 		<Unit filename="main.cpp" />
 		<Unit filename="string_cast.h" />
