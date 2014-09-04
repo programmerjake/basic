@@ -976,6 +976,10 @@ public:
                     return Token(TokenType::TTLogicalNE, tokenLocation, L"<>");
                 }
                 return Token((TokenType)'<', tokenLocation, L"<");
+            case '\'':
+                while(peekChar != '\n' && peekChar != EOF)
+                    nextChar();
+                continue;
             default:
                 handleError(location, L"invalid character");
                 return Token(TokenType::TTEOF, tokenLocation);
