@@ -36,9 +36,12 @@
 		</Compiler>
 		<Unit filename="ast/all.h" />
 		<Unit filename="ast/base.h" />
+		<Unit filename="ast/cast_expression.h" />
 		<Unit filename="ast/expression.h" />
+		<Unit filename="ast/or_expression.h" />
 		<Unit filename="ast/symbol_table.h" />
 		<Unit filename="ast/type.h" />
+		<Unit filename="ast/type_builtin.cpp" />
 		<Unit filename="ast/type_builtin.h" />
 		<Unit filename="basic.parser">
 			<Option compile="1" />
