@@ -3,10 +3,7 @@
 
 #include <cwchar>
 #include <string>
-#include <cstring>
 #include <cstdint>
-
-using namespace std;
 
 #if WCHAR_MAX == 0xFFFFFFFFU && WCHAR_MIN == 0U
 #define WCHAR_BITS (32)
@@ -15,7 +12,7 @@ using namespace std;
 #elif WCHAR_MAX == 0x7FFFFFFF && WCHAR_MIN == -0x80000000
 #define WCHAR_BITS (32)
 #define WCHAR_SIGN signed
-#define UNSIGNED_WCHAR uint_least32_t
+#define UNSIGNED_WCHAR std::uint_least32_t
 #elif WCHAR_MAX == 0xFFFFU && WCHAR_MIN == 0U
 #define WCHAR_BITS (16)
 #define WCHAR_SIGN unsigned
@@ -23,34 +20,33 @@ using namespace std;
 #elif WCHAR_MAX == 0x7FFF && WCHAR_MIN == -0x8000
 #define WCHAR_BITS (16)
 #define WCHAR_SIGN signed
-#define UNSIGNED_WCHAR uint_least16_t
+#define UNSIGNED_WCHAR std::uint_least16_t
 #else
 #error can not detect number of bits in wchar_t
 #endif
 
 template <typename T>
-T string_cast(string);
+T string_cast(std::string);
 
 template <typename T>
-T string_cast(wstring);
+T string_cast(std::wstring);
 
 template <>
-inline string string_cast<string>(string str)
+inline std::string string_cast<std::string>(std::string str)
 {
     return str;
 }
 
 template <>
-inline wstring string_cast<wstring>(wstring str)
+inline std::wstring string_cast<std::wstring>(std::wstring str)
 {
     return str;
 }
 
 template <>
-inline string string_cast<string>(wstring wstr)
+inline std::string string_cast<std::string>(std::wstring wstr)
 {
-#if 1
-    string retval;
+    std::string retval;
     for(size_t i = 0; i < wstr.size(); i++)
     {
         unsigned value = static_cast<unsigned>(static_cast<UNSIGNED_WCHAR>(wstr[i]));
@@ -93,34 +89,12 @@ inline string string_cast<string>(wstring wstr)
         }
     }
     return retval;
-#else
-    size_t destLen = wstr.length() * 4 + 1 + 32/*for extra buffer space*/;
-    char *str = new char[destLen];
-    for(size_t i = 0; i < destLen; i++)
-        str[i] = 0;
-    const wchar_t *ptr = wstr.c_str();
-    mbstate_t mbstate;
-    memset((void *)&mbstate, 0, sizeof(mbstate));
-    size_t v = wcsrtombs(str, &ptr, destLen - 1, &mbstate);
-
-    if(v == (size_t) - 1)
-    {
-        delete []str;
-        throw runtime_error("can't convert wide character string to multi-byte string");
-    }
-
-    str[v] = '\0';
-    string retval = str;
-    delete []str;
-    return retval;
-#endif
 }
 
 template <>
-inline wstring string_cast<wstring>(string str)
+inline std::wstring string_cast<std::wstring>(std::string str)
 {
-#if 1
-    wstring retval;
+    std::wstring retval;
     for(size_t i = 0; i < str.size(); i++)
     {
         unsigned value = static_cast<unsigned char>(str[i]);
@@ -187,27 +161,6 @@ inline wstring string_cast<wstring>(string str)
         }
     }
     return retval;
-#else
-    size_t destLen = str.length() + 1 + 32/* for extra buffer space*/;
-    wchar_t *wstr = new wchar_t[destLen];
-    for(size_t i = 0; i < destLen; i++)
-        wstr[i] = 0;
-    const char *ptr = str.c_str();
-    mbstate_t mbstate;
-    memset((void *)&mbstate, 0, sizeof(mbstate));
-    size_t v = mbsrtowcs(wstr, &ptr, destLen - 1, &mbstate);
-
-    if(v == (size_t) - 1)
-    {
-        delete []wstr;
-        throw runtime_error("can't convert multi-byte string to wide character string");
-    }
-
-    wstr[v] = '\0';
-    wstring retval = wstr;
-    delete []wstr;
-    return retval;
-#endif
 }
 
 #endif // STRING_CAST_H_INCLUDED

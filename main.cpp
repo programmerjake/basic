@@ -79,7 +79,7 @@ int main()
     }
     catch(exception &e)
     {
-        cerr << "error:\n" << e.what() << endl;
+        cerr << e.what() << endl;
         exit(1);
     }
     return 0;

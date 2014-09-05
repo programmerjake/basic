@@ -36,9 +36,10 @@
 		</Compiler>
 		<Unit filename="ast/all.h" />
 		<Unit filename="ast/base.h" />
+		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/symbol_table.h" />
 		<Unit filename="ast/type.h" />
-		<Unit filename="ast/type_integer.h" />
+		<Unit filename="ast/type_builtin.h" />
 		<Unit filename="basic.parser">
 			<Option compile="1" />
 			<Option link="1" />
@@ -47,6 +48,7 @@
 		</Unit>
 		<Unit filename="main.cpp" />
 		<Unit filename="string_cast.h" />
+		<Unit filename="tokenizer.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
