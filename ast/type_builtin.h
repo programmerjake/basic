@@ -93,6 +93,10 @@ public:
             return true;
         return false;
     }
+    virtual bool isIntegralType() const override
+    {
+        return true;
+    }
 };
 
 class TypeInt8 final : public Type
@@ -127,6 +131,10 @@ public:
         if(destType.get() == this)
             return true;
         return false;
+    }
+    virtual bool isIntegralType() const override
+    {
+        return true;
     }
 };
 
@@ -163,6 +171,10 @@ public:
             return true;
         return false;
     }
+    virtual bool isIntegralType() const override
+    {
+        return true;
+    }
 };
 
 class TypeInt32 final : public Type
@@ -198,6 +210,10 @@ public:
             return true;
         return false;
     }
+    virtual bool isIntegralType() const override
+    {
+        return true;
+    }
 };
 
 class TypeInt64 final : public Type
@@ -232,6 +248,10 @@ public:
         if(destType.get() == this)
             return true;
         return false;
+    }
+    virtual bool isIntegralType() const override
+    {
+        return true;
     }
 };
 
@@ -338,6 +358,10 @@ public:
             return true;
         return false;
     }
+    virtual bool isIntegralType() const override
+    {
+        return true;
+    }
 };
 
 class TypeUInt16 final : public Type
@@ -372,6 +396,10 @@ public:
         if(destType.get() == this)
             return true;
         return false;
+    }
+    virtual bool isIntegralType() const override
+    {
+        return true;
     }
 };
 
@@ -408,6 +436,10 @@ public:
             return true;
         return false;
     }
+    virtual bool isIntegralType() const override
+    {
+        return true;
+    }
 };
 
 class TypeUInt64 final : public Type
@@ -442,6 +474,10 @@ public:
         if(destType.get() == this)
             return true;
         return false;
+    }
+    virtual bool isIntegralType() const override
+    {
+        return true;
     }
 };
 

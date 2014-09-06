@@ -24,6 +24,10 @@ public:
     {
         return false;
     }
+    virtual bool isIntegralType() const
+    {
+        return false;
+    }
     virtual std::shared_ptr<Type> getBaseType() const
     {
         return std::static_pointer_cast<Type>(shared_from_this());
