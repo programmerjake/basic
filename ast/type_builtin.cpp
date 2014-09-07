@@ -1,24 +1,170 @@
 #include "ast/type_builtin.h"
+#include <cassert>
+
+using namespace std;
 
 namespace AST
 {
-bool TypeBoolean::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+namespace
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
-    if(destType.get() == this)
-        return true;
-    if(destType->isIntegeralType() && !isImplicitCast)
+bool isUnsigned(const shared_ptr<const Type> &t)
+{
+    if(t == TypeUInt8::getInstance() || t == TypeUInt16::getInstance() || t == TypeUInt32::getInstance() || t == TypeUInt64::getInstance())
         return true;
     return false;
 }
 
-bool TypeDouble::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+bool isFloatingPoint(const shared_ptr<const Type> &t)
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    if(t == TypeSingle::getInstance() || t == TypeDouble::getInstance())
+        return true;
+    return false;
+}
+
+bool isAtMost8Bits(const shared_ptr<const Type> &t)
+{
+    if(t == TypeUInt8::getInstance() || t == TypeInt8::getInstance())
+        return true;
+    return false;
+}
+
+bool fitsInInt8(const shared_ptr<const Type> &t)
+{
+    if(t == TypeInt8::getInstance())
+        return true;
+    return false;
+}
+
+bool isAtMost16Bits(const shared_ptr<const Type> &t)
+{
+    if(isAtMost8Bits(t) || t == TypeUInt16::getInstance() || t == TypeInt16::getInstance())
+        return true;
+    return false;
+}
+
+bool fitsInInt16(const shared_ptr<const Type> &t)
+{
+    if(isAtMost8Bits(t) || t == TypeInt16::getInstance())
+        return true;
+    return false;
+}
+
+bool isAtMost32Bits(const shared_ptr<const Type> &t)
+{
+    if(isAtMost16Bits(t) || t == TypeUInt32::getInstance() || t == TypeInt32::getInstance())
+        return true;
+    return false;
+}
+
+bool fitsInInt32(const shared_ptr<const Type> &t)
+{
+    if(isAtMost16Bits(t) || t == TypeInt32::getInstance())
+        return true;
+    return false;
+}
+
+bool isAtMost64Bits(const shared_ptr<const Type> &t)
+{
+    if(isAtMost32Bits(t) || t == TypeUInt64::getInstance() || t == TypeInt64::getInstance() || t == TypeInteger::getInstance())
+        return true;
+    return false;
+}
+
+bool fitsInInt64(const shared_ptr<const Type> &t)
+{
+    if(isAtMost32Bits(t) || t == TypeInt64::getInstance() || t == TypeInteger::getInstance())
+        return true;
+    return false;
+}
+
+bool is64Bits(const shared_ptr<const Type> &t)
+{
+    if(t == TypeUInt64::getInstance() || t == TypeInt64::getInstance())
+        return true;
+    return false;
+}
+
+shared_ptr<const Type> getCommonTypeH(shared_ptr<const Type> a, shared_ptr<const Type> b)
+{
+    a = a->toRValue();
+    b = b->toRValue();
+    if(*a == *b)
+        return a;
+    shared_ptr<const Type> aBaseType = a->getAbsoluteBaseType(), bBaseType = b->getAbsoluteBaseType();
+    if(*aBaseType == *bBaseType)
+        return aBaseType;
+    if(isFloatingPoint(aBaseType) || isFloatingPoint(bBaseType))
+    {
+        if(!isFloatingPoint(aBaseType) && !isAtMost64Bits(aBaseType))
+            return nullptr;
+        if(!isFloatingPoint(bBaseType) && !isAtMost64Bits(bBaseType))
+            return nullptr;
+        shared_ptr<const Type> retval = TypeSingle::getInstance();
+        if(aBaseType == TypeDouble::getInstance() || bBaseType == TypeDouble::getInstance() || is64Bits(aBaseType) || is64Bits(bBaseType))
+        {
+            retval = TypeDouble::getInstance();
+        }
+        return retval;
+    }
+    if(isUnsigned(a) && isUnsigned(b))
+    {
+        if(isAtMost8Bits(a) && isAtMost8Bits(b))
+            return TypeUInt8::getInstance();
+        if(isAtMost16Bits(a) && isAtMost16Bits(b))
+            return TypeUInt16::getInstance();
+        if(isAtMost32Bits(a) && isAtMost32Bits(b))
+            return TypeUInt32::getInstance();
+        if(isAtMost64Bits(a) && isAtMost64Bits(b))
+            return TypeUInt64::getInstance();
+    }
+    if(a == TypeInteger::getInstance() || b == TypeInteger::getInstance())
+    {
+        if(a != TypeInteger::getInstance())
+        {
+            swap(a, b);
+        }
+        assert(a == TypeInteger::getInstance());
+        if(!is64Bits(b))
+        {
+            return TypeInteger::getInstance();
+        }
+    }
+    if(fitsInInt8(a) && fitsInInt8(b))
+        return TypeInt8::getInstance();
+    if(fitsInInt16(a) && fitsInInt16(b))
+        return TypeInt16::getInstance();
+    if(fitsInInt32(a) && fitsInInt32(b))
+        return TypeInt32::getInstance();
+    if(fitsInInt64(a) && fitsInInt64(b))
+        return TypeInt64::getInstance();
+    return nullptr;
+}
+}
+
+bool TypeBoolean::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
+    if(destType.get() == this)
+        return true;
+    if(destType->isIntegralType() && !isImplicitCast)
+        return true;
+    return false;
+}
+
+shared_ptr<const Type> TypeBoolean::getCommonType(shared_ptr<const Type> rt) const
+{
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeDouble::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeInt8::getInstance())
@@ -44,11 +190,17 @@ bool TypeDouble::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) 
     return false;
 }
 
-bool TypeInteger::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeDouble::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeInteger::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -74,11 +226,17 @@ bool TypeInteger::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast)
     return false;
 }
 
-bool TypeInt8::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeInteger::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeInt8::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -104,11 +262,17 @@ bool TypeInt8::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) co
     return false;
 }
 
-bool TypeInt16::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeInt8::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeInt16::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -134,11 +298,17 @@ bool TypeInt16::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) c
     return false;
 }
 
-bool TypeInt32::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeInt16::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeInt32::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -164,11 +334,17 @@ bool TypeInt32::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) c
     return false;
 }
 
-bool TypeInt64::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeInt32::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeInt64::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -194,11 +370,17 @@ bool TypeInt64::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) c
     return false;
 }
 
-bool TypeSingle::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeInt64::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeSingle::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -224,21 +406,33 @@ bool TypeSingle::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) 
     return false;
 }
 
-bool TypeString::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeSingle::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeString::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     return false;
 }
 
-bool TypeUInt8::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeString::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeUInt8::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -264,11 +458,17 @@ bool TypeUInt8::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) c
     return false;
 }
 
-bool TypeUInt16::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeUInt8::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeUInt16::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -294,11 +494,17 @@ bool TypeUInt16::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) 
     return false;
 }
 
-bool TypeUInt32::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeUInt16::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeUInt32::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -324,11 +530,17 @@ bool TypeUInt32::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) 
     return false;
 }
 
-bool TypeUInt64::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) const
+shared_ptr<const Type> TypeUInt32::getCommonType(shared_ptr<const Type> rt) const
 {
-    destType = destType->toRValue();
-    if(destType->isTypeAlias())
-        destType = destType->getBaseType();
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
+}
+
+bool TypeUInt64::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) const
+{
+    if(destType->isLValue())
+        return false;
+    if(destType->isTypeAlias() && !isImplicitCast)
+        destType = destType->getAbsoluteBaseType();
     if(destType.get() == this)
         return true;
     if(destType == TypeDouble::getInstance())
@@ -352,6 +564,11 @@ bool TypeUInt64::canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast) 
     if(destType == TypeUInt32::getInstance())
         return !isImplicitCast;
     return false;
+}
+
+shared_ptr<const Type> TypeUInt64::getCommonType(shared_ptr<const Type> rt) const
+{
+    return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
 }
 
 }

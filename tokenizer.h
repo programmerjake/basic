@@ -9,6 +9,7 @@
 #include <cassert>
 #include <memory>
 #include <sstream>
+#include <cmath>
 #include "string_cast.h"
 
 struct Location final
@@ -154,6 +155,123 @@ struct Token final
         else
             svalue += wch;
     }
+private:
+    static bool iswodigit(std::wint_t ch)
+    {
+        return ch >= '0' && ch <= '7';
+    }
+public:
+    double getFloatingPointLiteralValue() const
+    {
+        if(svalue.empty())
+            return NAN;
+        size_t stringIndex = 0;
+        int peekChar = svalue[stringIndex++];
+        auto getChar = [&]()->int
+        {
+            if(stringIndex >= svalue.size())
+                peekChar = EOF;
+            else
+                peekChar = svalue[stringIndex++];
+            return peekChar;
+        };
+        double retval = 0;
+        if(peekChar == '&')
+        {
+            getChar();
+            if(peekChar == 'h' || peekChar == 'H')
+            {
+                getChar();
+                if(!std::iswxdigit(peekChar))
+                    return NAN;
+                while(std::iswxdigit(peekChar))
+                {
+                    int digit;
+                    if(std::iswdigit(peekChar))
+                        digit = peekChar - '0';
+                    else if(std::iswlower(peekChar))
+                        digit = peekChar - 'a' + 0xA;
+                    else
+                        digit = peekChar - 'A' + 0xA;
+                    retval *= 0x10;
+                    retval += digit;
+                    getChar();
+                }
+                if(peekChar == '_')
+                    return NAN;
+                if(peekChar != EOF)
+                    return NAN;
+                return retval;
+            }
+            else if(iswodigit(peekChar) || peekChar == 'o' || peekChar == 'O')
+            {
+                if(peekChar == 'o' || peekChar == 'O')
+                    getChar();
+                if(!iswodigit(peekChar))
+                {
+                    return NAN;
+                }
+                while(iswodigit(peekChar))
+                {
+                    int digit = peekChar - '0';
+                    retval *= 8;
+                    retval += digit;
+                    getChar();
+                }
+                if(peekChar != EOF)
+                    return NAN;
+                return retval;
+            }
+            return NAN;
+        }
+        bool gotAnyIntegerDigits = false;
+        while(std::iswdigit(peekChar))
+        {
+            int digit = getChar() - '0';
+            retval *= 10;
+            retval += digit;
+            gotAnyIntegerDigits = true;
+        }
+        if(peekChar == '.')
+        {
+            getChar();
+            double factor = 1;
+            if(!gotAnyIntegerDigits && !std::iswdigit(peekChar))
+            {
+                return NAN;
+            }
+            while(std::iswdigit(peekChar))
+            {
+                int digit = getChar() - '0';
+                factor *= 0.1;
+                retval += digit * factor;
+            }
+        }
+        if(peekChar == 'e' || peekChar == 'E' || peekChar == 'f' || peekChar == 'F')
+        {
+            getChar();
+            bool isExponentNegative = false;
+            if(peekChar == '+' || peekChar == '-')
+                isExponentNegative = (getChar() == '-');
+            if(!std::iswdigit(peekChar))
+                return NAN;
+            int exponent = 0;
+            while(std::iswdigit(peekChar))
+            {
+                int digit = getChar() - '0';
+                if(exponent >= 10000000)
+                    continue;
+                exponent *= 10;
+                exponent += digit;
+            }
+            if(isExponentNegative)
+                exponent = -exponent;
+            retval *= std::pow(10.0L, exponent);
+        }
+        if(peekChar != EOF)
+            return NAN;
+        return retval;
+    }
 };
 
 struct InputStream
@@ -195,6 +313,8 @@ class Tokenizer final
     Location location;
     std::shared_ptr<InputStream> input;
     int peekChar;
+    bool isExtraChar = false; // used for duplicating end line characters for interactive input
+    bool isInteractive;
     static void handleError(Location location, const std::wstring &msg)
     {
         throw TokenizerError(location, msg);
@@ -202,6 +322,11 @@ class Tokenizer final
     static constexpr size_t TabWidth = 8;
     void nextChar()
     {
+        if(isExtraChar)
+        {
+            isExtraChar = false;
+            return;
+        }
         switch(peekChar)
         {
         case '\t':
@@ -217,6 +342,8 @@ class Tokenizer final
             break;
         }
         peekChar = input->getChar();
+        if(peekChar == '\n' && isInteractive)
+            isExtraChar = true; // if it's interactive input duplicate end line character so it finishes parsing this line
     }
     int getChar()
     {
@@ -229,6 +356,34 @@ class Tokenizer final
         if(v >= '0' && v <= '7')
             return true;
         return false;
+    }
+    Token readLiteralType(Token token)
+    {
+        if(token.type != TokenType::TTIntegerLiteral)
+            handleError(location, L"can not use a literal type on a floating-point number");
+        std::wstring literalType = L"";
+        token.addChar(getChar());
+        Location literalTypeLocation = location;
+        if(peekChar == 'u' || peekChar == 'U')
+        {
+            literalType += L"U";
+            token.addChar('U');
+            nextChar();
+        }
+        else if(peekChar == 'b' || peekChar == 'B')
+        {
+            token.svalue += L"U8";
+            nextChar();
+            return token;
+        }
+        while(std::iswdigit(peekChar))
+        {
+            literalType += (wchar_t)peekChar;
+            token.addChar(getChar());
+        }
+        if(literalType != L"U8" && literalType != L"8" && literalType != L"U16" && literalType != L"16" && literalType != L"U32" && literalType != L"32" && literalType != L"U64" && literalType != L"64")
+            handleError(literalTypeLocation, L"unknown literal type");
+        return token;
     }
     Token readNumber(Location tokenLocation)
     {
@@ -245,6 +400,8 @@ class Tokenizer final
                 {
                     retval.addChar(towupper(getChar()));
                 }
+                if(peekChar == '_')
+                    return readLiteralType(retval);
                 return retval;
             }
             else if(iswodigit(peekChar) || peekChar == 'o' || peekChar == 'O')
@@ -265,9 +422,13 @@ class Tokenizer final
                 }
                 if(std::iswdigit(peekChar))
                     handleError(location, L"digit is not valid octal digit");
+                if(peekChar == '_')
+                    return readLiteralType(retval);
                 return retval;
             }
             retval.type = (TokenType)retval.svalue[0];
+            if(peekChar == '_')
+                return readLiteralType(retval);
             return retval;
         }
         while(std::iswdigit(peekChar))
@@ -312,12 +473,14 @@ class Tokenizer final
                 retval.type = TokenType::TTSingleLiteral;
                 break;
             case '#':
-                retval.type = TokenType::TTSingleLiteral;
+                retval.type = TokenType::TTDoubleLiteral;
                 break;
             default:
                 assert(false);
             }
         }
+        else if(peekChar == '_')
+            return readLiteralType(retval);
         return retval;
     }
     static int compareCaseInsensitive(const std::wstring &a, const std::wstring &b)
@@ -466,6 +629,7 @@ public:
     explicit Tokenizer(std::shared_ptr<InputStream> input)
         : location(1, 1, input->getName()), input(input), peekChar(input->getChar())
     {
+        isInteractive = (input->getName() == L"stdin");
     }
     Token getToken()
     {

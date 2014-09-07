@@ -6,5 +6,10 @@
 #include "ast/symbol_table.h"
 #include "ast/type_builtin.h"
 #include "ast/expression.h"
+#include "ast/or_expression.h"
+#include "ast/and_expression.h"
+#include "ast/xor_expression.h"
+#include "ast/cast_expression.h"
+#include "ast/literal_expression.h"
 
 #endif // ALL_H_INCLUDED

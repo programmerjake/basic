@@ -30,7 +30,12 @@ public:
     {
         return L"Boolean";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override;
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeDouble final : public Type
@@ -57,9 +62,16 @@ public:
     {
         return L"Double";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override;
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
+/** 32 or 64 bits depending on target architecture
+ */
 class TypeInteger final : public Type
 {
 private:
@@ -84,19 +96,16 @@ public:
     {
         return L"Integer";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeInt8 final : public Type
@@ -123,19 +132,16 @@ public:
     {
         return L"Int8";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeInt16 final : public Type
@@ -162,19 +168,16 @@ public:
     {
         return L"Int16";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeInt32 final : public Type
@@ -201,19 +204,16 @@ public:
     {
         return L"Int32";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeInt64 final : public Type
@@ -240,19 +240,16 @@ public:
     {
         return L"Int64";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeSingle final : public Type
@@ -279,15 +276,12 @@ public:
     {
         return L"Single";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
+    virtual bool operator ==(const Type &rt) const override
     {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
+        return this == &rt;
     }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeString final : public Type
@@ -314,15 +308,12 @@ public:
     {
         return L"String";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
+    virtual bool operator ==(const Type &rt) const override
     {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
+        return this == &rt;
     }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeUInt8 final : public Type
@@ -349,19 +340,16 @@ public:
     {
         return L"UInt8";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeUInt16 final : public Type
@@ -388,19 +376,16 @@ public:
     {
         return L"UInt16";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeUInt32 final : public Type
@@ -427,19 +412,16 @@ public:
     {
         return L"UInt32";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 class TypeUInt64 final : public Type
@@ -466,19 +448,16 @@ public:
     {
         return L"UInt64";
     }
-    virtual bool canCastTo(std::shared_ptr<Type> destType, bool isImplicitCast = true) const override
-    {
-        destType = destType->toRValue();
-        if(destType->isTypeAlias())
-            destType = destType->getBaseType();
-        if(destType.get() == this)
-            return true;
-        return false;
-    }
+    virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool isIntegralType() const override
     {
         return true;
     }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
 };
 
 }
