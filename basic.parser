@@ -396,7 +396,7 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Cast '(' type ',' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<const AST::Type>($3.node), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
     | Exp '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
     | Hex '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Id {handleErrorNotImplemented(this, $1.token.location, L"variable access");}
+    | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError(this, $1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
     | toplevel_expression '[' expression ']' {handleErrorNotImplemented(this, $2.token.location, L"array index");}
     | toplevel_expression '(' fn_arg_list ')' {handleErrorNotImplemented(this, $1.token.location, L"Function call");}
     | Instr '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
