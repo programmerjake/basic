@@ -14,5 +14,7 @@
 #include "ast/literal_expression.h"
 #include "ast/code_block.h"
 #include "ast/if_statement.h"
+#include "ast/while_statement.h"
+#include "ast/do_statement.h"
 
 #endif // ALL_H_INCLUDED

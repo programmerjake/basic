@@ -6,6 +6,7 @@
 #include "ast/code_block.h"
 #include <tuple>
 #include <vector>
+#include <memory>
 
 namespace AST
 {

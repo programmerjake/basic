@@ -38,6 +38,7 @@
 		<Unit filename="ast/base.h" />
 		<Unit filename="ast/cast_expression.h" />
 		<Unit filename="ast/code_block.h" />
+		<Unit filename="ast/do_statement.h" />
 		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/expressions.cpp" />
 		<Unit filename="ast/if_statement.h" />
@@ -49,6 +50,7 @@
 		<Unit filename="ast/type.h" />
 		<Unit filename="ast/type_builtin.cpp" />
 		<Unit filename="ast/type_builtin.h" />
+		<Unit filename="ast/while_statement.h" />
 		<Unit filename="ast/xor_expression.h" />
 		<Unit filename="basic.parser">
 			<Option compile="1" />

@@ -279,12 +279,47 @@ inlineStatementList: inlineStatement {$$ = ParserValueType(vector<shared_ptr<AST
     ;
 
 statement: ifStatement {$$ = $1;}
-    | Do While expression codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
-    | Do Until expression codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
-    | Do codeBlockWithNewLine Loop While expression {handleErrorNotImplemented($1.token);}
-    | Do codeBlockWithNewLine Loop Until expression {handleErrorNotImplemented($1.token);}
-    | Do codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
-    | While expression codeBlockWithNewLine WEnd {handleErrorNotImplemented($1.token);}
+    | Do While expression codeBlockWithNewLine Loop
+    {
+        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
+                                                       dynamic_pointer_cast<AST::Expression>($3.node),
+                                                       AST::DoStatement::ConditionType::DoWhile,
+                                                       dynamic_pointer_cast<AST::CodeBlock>($4.node)));
+    }
+    | Do Until expression codeBlockWithNewLine Loop
+    {
+        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
+                                                       dynamic_pointer_cast<AST::Expression>($3.node),
+                                                       AST::DoStatement::ConditionType::DoUntil,
+                                                       dynamic_pointer_cast<AST::CodeBlock>($4.node)));
+    }
+    | Do codeBlockWithNewLine Loop While expression
+    {
+        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
+                                                       dynamic_pointer_cast<AST::Expression>($5.node),
+                                                       AST::DoStatement::ConditionType::LoopWhile,
+                                                       dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+    }
+    | Do codeBlockWithNewLine Loop Until expression
+    {
+        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
+                                                       dynamic_pointer_cast<AST::Expression>($5.node),
+                                                       AST::DoStatement::ConditionType::LoopUntil,
+                                                       dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+    }
+    | Do codeBlockWithNewLine Loop
+    {
+        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
+                                                       nullptr,
+                                                       AST::DoStatement::ConditionType::None,
+                                                       dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+    }
+    | While expression codeBlockWithNewLine WEnd
+    {
+        $$ = ParserValueType(AST::WhileStatement::make($1.token.location,
+                                                       dynamic_pointer_cast<AST::Expression>($2.node),
+                                                       dynamic_pointer_cast<AST::CodeBlock>($3.node)));
+    }
     | For expression_no_equals '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     | For expression_no_equals '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     | For Dim Id '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}

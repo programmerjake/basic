@@ -99,9 +99,13 @@ struct MemoryInputStream : public FileInputStream
 string getInput()
 {
     return string(R"a(
-If True Then
-    Cast(TypeOf(1), 1.5)
-End If
+Do While True Or False
+    If True And False Then
+        Cast(TypeOf(1), 1.5)
+    ElseIf False Then
+    Else
+    End If
+Loop
 )a").substr(1);
 }
 
