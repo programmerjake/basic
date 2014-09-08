@@ -277,7 +277,7 @@ inlineStatementList: inlineStatement {$$ = ParserValueType(vector<shared_ptr<AST
     | inlineStatementList ':' inlineStatement {$$ = $1; $$.nodes.push_back($3.node);}
     ;
 
-statement: If expression Then codeBlockWithNewLine elseSection End If {handleErrorNotImplemented($1.token);}
+statement: ifStatement {$$ = $1;}
     | Do While expression codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
     | Do Until expression codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
     | Do codeBlockWithNewLine Loop While expression {handleErrorNotImplemented($1.token);}
@@ -303,7 +303,14 @@ restOfLineStatement: If expression Then restOfLineStatementList {handleErrorNotI
     | If expression Then inlineStatementList Else restOfLineStatementList {handleErrorNotImplemented($1.token);}
     ;
 
-ifStatement: ifStatementInternal End If {$$ = $1;}
+ifStatement: ifStatementInternal End If {$$ = $1; dynamic_pointer_cast<AST::IfStatement>($$.node)->checkTypes();}
+    | ifStatementInternal Else codeBlockWithNewLine End If
+    {
+        $$ = $1;
+        shared_ptr<AST::IfStatement> s = dynamic_pointer_cast<AST::IfStatement>($$.node);
+        s->elseSection = dynamic_pointer_cast<AST::CodeBlock>($3.node);
+        s->checkTypes();
+    }
     ;
 
 ifStatementInternal: If expression Then codeBlockWithNewLine
@@ -313,6 +320,12 @@ ifStatementInternal: If expression Then codeBlockWithNewLine
                                                     {
                                                         pair<shared_ptr<AST::Expression>, shared_ptr<AST::CodeBlock>>(dynamic_pointer_cast<AST::Expression>($2.node), dynamic_pointer_cast<AST::CodeBlock>($4.node))
                                                     })));
+    }
+    | ifStatementInternal ElseIf expression Then codeBlockWithNewLine
+    {
+        $$ = $1;
+        shared_ptr<AST::IfStatement> s = dynamic_pointer_cast<AST::IfStatement>($$.node);
+        s->ifSections.push_back(pair<shared_ptr<AST::Expression>, shared_ptr<AST::CodeBlock>>(dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::CodeBlock>($5.node)));
     }
     ;
 

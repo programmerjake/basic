@@ -157,7 +157,7 @@ class IntegerLiteralExpression : public LiteralExpression
             retval += additionalMessiness;
         }
         while(value > 0);
-        return value;
+        return retval;
     }
     bool shouldDisplayAsHex() const
     {

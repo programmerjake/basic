@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "basic.parser.h"
 #include "string_cast.h"
 
@@ -21,6 +22,10 @@ public:
         input = make_shared<ifstream>(s.c_str());
         if(!*input)
             throw ParserBase::ParseError("can't open " + s);
+    }
+    explicit FileInputStream(wstring fileName, shared_ptr<istream> input)
+        : fileName(fileName), input(input)
+    {
     }
     virtual int getChar() override
     {
@@ -71,16 +76,45 @@ public:
     }
 };
 
+struct MemoryInputStream : public FileInputStream
+{
+    explicit MemoryInputStream(string buffer)
+        : FileInputStream(L"memory", make_shared<istringstream>(buffer))
+    {
+    }
+    explicit MemoryInputStream(wstring fileName, string buffer)
+        : FileInputStream(fileName, make_shared<istringstream>(buffer))
+    {
+    }
+    explicit MemoryInputStream(wstring buffer)
+        : FileInputStream(L"memory", make_shared<istringstream>(string_cast<string>(buffer)))
+    {
+    }
+    explicit MemoryInputStream(wstring fileName, wstring buffer)
+        : FileInputStream(fileName, make_shared<istringstream>(string_cast<string>(buffer)))
+    {
+    }
+};
+
+string getInput()
+{
+    return string(R"a(
+If True Then
+    Cast(TypeOf(1), 1.5)
+End If
+)a").substr(1);
+}
+
 int main()
 {
     try
     {
-        parseAll(make_shared<FileInputStream>());
+        parseAll(make_shared<MemoryInputStream>(getInput()));
     }
     catch(exception &e)
     {
         cerr << e.what() << endl;
-        exit(1);
+        return 1;
     }
     return 0;
 }

@@ -44,6 +44,7 @@
 		<Unit filename="ast/literal_expression.h" />
 		<Unit filename="ast/or_expression.h" />
 		<Unit filename="ast/statement.h" />
+		<Unit filename="ast/statements.cpp" />
 		<Unit filename="ast/symbol_table.h" />
 		<Unit filename="ast/type.h" />
 		<Unit filename="ast/type_builtin.cpp" />
