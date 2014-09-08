@@ -13,6 +13,10 @@ namespace AST
 class Type : public Base
 {
 public:
+    Type(Location location)
+        : Base(location)
+    {
+    }
     virtual std::wstring toString() const = 0;
     virtual bool isLValue() const
     {

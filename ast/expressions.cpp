@@ -5,6 +5,7 @@
 #include "ast/xor_expression.h"
 #include "ast/cast_expression.h"
 #include "ast/literal_expression.h"
+#include "error.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -20,7 +21,7 @@ namespace AST
 {
 namespace
 {
-shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, function<void(const wstring &)> handleError, const wstring &opName)
+shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, const wstring &opName)
 {
     vector<shared_ptr<const Type>> types;
     types.reserve(args.size());
@@ -34,7 +35,7 @@ shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, function<
 
     if(type == nullptr)
     {
-        handleError(L"invalid argument types for " + opName);
+        throw ParserError(args[0]->location(), L"invalid argument types for " + opName);
     }
 
     for(shared_ptr<Expression> &e : args)
@@ -45,40 +46,40 @@ shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, function<
     return type;
 }
 
-shared_ptr<const Type> calcTypeHLogicOps(vector<shared_ptr<Expression>> &args, function<void(const wstring &)> handleError, const wstring &opName)
+shared_ptr<const Type> calcTypeHLogicOps(vector<shared_ptr<Expression>> &args, const wstring &opName)
 {
-    shared_ptr<const Type> type = calcTypeH(args, handleError, opName);
+    shared_ptr<const Type> type = calcTypeH(args, opName);
 
     if(type->getAbsoluteBaseType() != TypeBoolean::getInstance() && !type->isIntegralType())
     {
-        handleError(L"invalid argument types for " + opName);
+        throw ParserError(args[0]->location(), L"invalid argument types for " + opName);
     }
 
     return type;
 }
 }
 
-void OrExpression::calcType(function<void(const wstring &)> handleError)
+void OrExpression::calcType()
 {
-    type(calcTypeHLogicOps(argsRef(), handleError, L"Or"));
+    type(calcTypeHLogicOps(argsRef(), L"Or"));
 }
 
-void AndExpression::calcType(function<void(const wstring &)> handleError)
+void AndExpression::calcType()
 {
-    type(calcTypeHLogicOps(argsRef(), handleError, L"And"));
+    type(calcTypeHLogicOps(argsRef(), L"And"));
 }
 
-void XorExpression::calcType(function<void(const wstring &)> handleError)
+void XorExpression::calcType()
 {
-    type(calcTypeHLogicOps(argsRef(), handleError, L"Xor"));
+    type(calcTypeHLogicOps(argsRef(), L"Xor"));
 }
 
 namespace
 {
-int IntegerLiteralMakeOnErrorHelper(function<void(const std::wstring &)> errorHandler, const std::wstring &msg)
+int IntegerLiteralMakeOnErrorHelper(function<void(Location location, const std::wstring &)> errorHandler, Location location, const std::wstring &msg)
 {
     if(errorHandler)
-        errorHandler(msg);
+        errorHandler(location, msg);
     return 0;
 }
 
@@ -90,10 +91,10 @@ bool iswodigit(wint_t ch)
 }
 }
 
-shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring value, function<void(const std::wstring &)> errorHandler)
+shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(Location location, wstring value, function<void(Location, const std::wstring &)> errorHandler)
 {
     if(value.empty())
-        return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"empty string"));
+        return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"empty string"));
     wstring typeString = L"";
     size_t underlinePos = value.find_last_of(L'_');
     if(underlinePos != wstring::npos)
@@ -101,9 +102,9 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
         typeString = value.substr(underlinePos + 1);
         value.erase(underlinePos);
         if(value.empty())
-            return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"missing digits"));
+            return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"missing digits"));
         if(typeString.empty())
-            return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"missing literal type after _"));
+            return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"missing literal type after _"));
     }
     bool isNegative = (value[0] == '-');
     if(value[0] == '-' || value[0] == '+')
@@ -111,14 +112,14 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
         value.erase(0, 1);
     }
     if(value.empty())
-        return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"missing digits"));
+        return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"missing digits"));
     uint64_t retval = 0;
     constexpr uint64_t top3Bits = ~(~(uint64_t)0 >> 3);
     constexpr uint64_t top4Bits = ~(~(uint64_t)0 >> 4);
     if(value[0] == '&')
     {
         if(value.size() < 2)
-            return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"missing digits"));
+            return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"missing digits"));
         if(iswodigit(value[1]) || value[1] == 'o' || value[1] == 'O')
         {
             size_t start = 1;
@@ -126,15 +127,15 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
             {
                 start = 2;
                 if(value.size() < 3)
-                    return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"missing digits"));
+                    return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"missing digits"));
             }
             for(size_t i = start; i < value.size(); i++)
             {
                 if(!iswodigit(value[i]))
-                    return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"invalid octal digit"));
+                    return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"invalid octal digit"));
                 int digit = value[i] - '0';
                 if(retval & top3Bits)
-                    return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"number too big"));
+                    return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
                 retval <<= 3;
                 retval += digit;
             }
@@ -142,13 +143,13 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
         else
         {
             if(value.size() < 3)
-                return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"missing digits"));
+                return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"missing digits"));
             if(value[1] == 'h' || value[1] == 'H') // Hex
             {
                 for(size_t i = 2; i < value.size(); i++)
                 {
                     if(!iswxdigit(value[i]))
-                        return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"invalid hexadecimal digit"));
+                        return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"invalid hexadecimal digit"));
                     int digit;
                     if(iswdigit(value[i]))
                         digit = value[i] - '0';
@@ -157,13 +158,13 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
                     else // upper case
                         digit = value[i] - 'A' + 0xA;
                     if(retval & top4Bits)
-                        return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"number too big"));
+                        return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
                     retval <<= 4;
                     retval += digit;
                 }
             }
             else
-                return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"invalid base indicator"));
+                return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"invalid base indicator"));
         }
     }
     else
@@ -172,13 +173,13 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
         for(size_t i = 0; i < value.size(); i++)
         {
             if(!iswdigit(value[i]))
-                return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"invalid decimal digit"));
+                return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"invalid decimal digit"));
             int digit = value[i] - '0';
             if(retval > maxBeforeMultiplying)
-                return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"number too big"));
+                return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
             retval *= 10;
             if(retval >= -(uint64_t)digit)
-                return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"number too big"));
+                return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
             retval += digit;
         }
     }
@@ -241,16 +242,16 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(wstring valu
         }
         else
         {
-            return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"invalid literal type"));
+            return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"invalid literal type"));
         }
         if(retval & ~mask)
-            return make(IntegerLiteralMakeOnErrorHelper(errorHandler, L"number too big"));
+            return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
         if(isNegative)
             retval = mask + 1 - retval;
-        return make(retval, isSigned, type);
+        return make(location, retval, isSigned, type);
     }
     if(isNegative)
         retval = -retval;
-    return make(retval);
+    return make(location, retval);
 }
 }

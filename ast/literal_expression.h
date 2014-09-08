@@ -15,8 +15,8 @@ namespace AST
 class LiteralExpression : public Expression
 {
 public:
-    LiteralExpression(std::shared_ptr<const Type> type)
-        : Expression(type)
+    LiteralExpression(Location location, std::shared_ptr<const Type> type)
+        : Expression(location, type)
     {
     }
     virtual std::wstring toString(bool useHighPrecision = false) const = 0;
@@ -28,19 +28,15 @@ public:
 
 class BooleanLiteralExpression : public LiteralExpression
 {
-    BooleanLiteralExpression(bool value)
-        : LiteralExpression(TypeBoolean::getInstance()), value(value)
+    BooleanLiteralExpression(Location location, bool value)
+        : LiteralExpression(location, TypeBoolean::getInstance()), value(value)
     {
     }
 public:
     bool value;
-    static std::shared_ptr<BooleanLiteralExpression> make(bool value)
+    static std::shared_ptr<BooleanLiteralExpression> make(Location location, bool value)
     {
-        return std::shared_ptr<BooleanLiteralExpression>(new BooleanLiteralExpression(value));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return make(value);
+        return std::shared_ptr<BooleanLiteralExpression>(new BooleanLiteralExpression(location, value));
     }
     virtual std::wstring toString(bool /*useHighPrecision*/ = false) const override
     {
@@ -52,19 +48,15 @@ public:
 
 class DoubleLiteralExpression : public LiteralExpression
 {
-    DoubleLiteralExpression(double value)
-        : LiteralExpression(TypeDouble::getInstance()), value(value)
+    DoubleLiteralExpression(Location location, double value)
+        : LiteralExpression(location, TypeDouble::getInstance()), value(value)
     {
     }
 public:
     double value;
-    static std::shared_ptr<DoubleLiteralExpression> make(double value)
+    static std::shared_ptr<DoubleLiteralExpression> make(Location location, double value)
     {
-        return std::shared_ptr<DoubleLiteralExpression>(new DoubleLiteralExpression(value));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return make(value);
+        return std::shared_ptr<DoubleLiteralExpression>(new DoubleLiteralExpression(location, value));
     }
     virtual std::wstring toString(bool useHighPrecision = false) const override
     {
@@ -77,19 +69,15 @@ public:
 
 class SingleLiteralExpression : public LiteralExpression
 {
-    SingleLiteralExpression(float value)
-        : LiteralExpression(TypeSingle::getInstance()), value(value)
+    SingleLiteralExpression(Location location, float value)
+        : LiteralExpression(location, TypeSingle::getInstance()), value(value)
     {
     }
 public:
     float value;
-    static std::shared_ptr<SingleLiteralExpression> make(float value)
+    static std::shared_ptr<SingleLiteralExpression> make(Location location, float value)
     {
-        return std::shared_ptr<SingleLiteralExpression>(new SingleLiteralExpression(value));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return make(value);
+        return std::shared_ptr<SingleLiteralExpression>(new SingleLiteralExpression(location, value));
     }
     virtual std::wstring toString(bool useHighPrecision = false) const override
     {
@@ -102,19 +90,15 @@ public:
 
 class StringLiteralExpression : public LiteralExpression
 {
-    StringLiteralExpression(const std::wstring &value)
-        : LiteralExpression(TypeString::getInstance()), value(value)
+    StringLiteralExpression(Location location, const std::wstring &value)
+        : LiteralExpression(location, TypeString::getInstance()), value(value)
     {
     }
 public:
     std::wstring value;
-    static std::shared_ptr<StringLiteralExpression> make(const std::wstring &value)
+    static std::shared_ptr<StringLiteralExpression> make(Location location, const std::wstring &value)
     {
-        return std::shared_ptr<StringLiteralExpression>(new StringLiteralExpression(value));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return make(value);
+        return std::shared_ptr<StringLiteralExpression>(new StringLiteralExpression(location, value));
     }
     virtual std::wstring toString(bool /*useHighPrecision*/ = false) const override
     {
@@ -138,8 +122,8 @@ public:
 
 class IntegerLiteralExpression : public LiteralExpression
 {
-    IntegerLiteralExpression(std::int64_t value, bool isSigned, std::shared_ptr<const Type> type)
-        : LiteralExpression(type), value(value)
+    IntegerLiteralExpression(Location location, std::int64_t value, bool isSigned, std::shared_ptr<const Type> type)
+        : LiteralExpression(location, type), value(value)
     {
     }
     static std::shared_ptr<const Type> calcType(std::int64_t value, bool isSigned)
@@ -191,18 +175,14 @@ class IntegerLiteralExpression : public LiteralExpression
 public:
     std::int64_t value;
     bool isSigned;
-    static std::shared_ptr<IntegerLiteralExpression> make(std::wstring value, std::function<void(const std::wstring &)> errorHandler = nullptr); // in expressions.cpp
-    static std::shared_ptr<IntegerLiteralExpression> make(std::int64_t value, bool isSigned = true)
+    static std::shared_ptr<IntegerLiteralExpression> make(Location location, std::wstring value, std::function<void(Location, const std::wstring &)> errorHandler = nullptr); // in expressions.cpp
+    static std::shared_ptr<IntegerLiteralExpression> make(Location location, std::int64_t value, bool isSigned = true)
     {
-        return std::shared_ptr<IntegerLiteralExpression>(new IntegerLiteralExpression(value, isSigned, calcType(value, isSigned)));
+        return std::shared_ptr<IntegerLiteralExpression>(new IntegerLiteralExpression(location, value, isSigned, calcType(value, isSigned)));
     }
-    static std::shared_ptr<IntegerLiteralExpression> make(std::int64_t value, bool isSigned, std::shared_ptr<const Type> type)
+    static std::shared_ptr<IntegerLiteralExpression> make(Location location, std::int64_t value, bool isSigned, std::shared_ptr<const Type> type)
     {
-        return std::shared_ptr<IntegerLiteralExpression>(new IntegerLiteralExpression(value, isSigned, type));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return make(value, isSigned, type());
+        return std::shared_ptr<IntegerLiteralExpression>(new IntegerLiteralExpression(location, value, isSigned, type));
     }
     virtual std::wstring toString(bool /*useHighPrecision*/ = false) const override
     {

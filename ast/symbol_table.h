@@ -7,6 +7,7 @@
 #include <memory>
 #include <tuple>
 #include <cassert>
+#include <vector>
 #include "ast/base.h"
 #include "ast/type.h"
 
@@ -54,20 +55,63 @@ public:
 
 class SymbolTable final
 {
-    std::unordered_map<std::wstring, Symbol> symbols;
+    std::unordered_map<std::wstring, size_t> symbolMap;
+    std::vector<Symbol> symbols;
+    SymbolTable()
+    {
+    }
 public:
+    static std::shared_ptr<SymbolTable> make()
+    {
+        return std::shared_ptr<SymbolTable>(new SymbolTable);
+    }
     bool exists(const std::wstring &name) const
     {
-        return symbols.count(name) > 0;
+        return symbolMap.count(name) > 0;
     }
     const Symbol &get(const std::wstring &name) const
     {
-        return symbols.at(name);
+        return symbols[symbolMap.at(name)];
     }
     bool make(Symbol s)
     {
         assert(!s.empty());
-        return std::get<1>(symbols.insert(std::pair<std::wstring, Symbol>(s.name(), s)));
+        auto v = symbolMap.insert(std::pair<std::wstring, size_t>(s.name(), 0));
+        if(std::get<1>(v))
+        {
+            std::get<1>(*std::get<0>(v)) = symbols.size();
+            symbols.push_back(std::move(s));
+        }
+        else
+        {
+            symbols[std::get<1>(*std::get<0>(v))] = std::move(s);
+        }
+        return std::get<1>(v);
+    }
+    typedef std::vector<Symbol>::const_iterator iterator;
+    iterator begin() const
+    {
+        return symbols.begin();
+    }
+    iterator end() const
+    {
+        return symbols.end();
+    }
+    iterator cbegin() const
+    {
+        return symbols.begin();
+    }
+    iterator cend() const
+    {
+        return symbols.end();
+    }
+    bool empty() const
+    {
+        return symbols.empty();
+    }
+    size_t size() const
+    {
+        return symbols.size();
     }
 };
 }

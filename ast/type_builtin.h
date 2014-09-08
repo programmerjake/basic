@@ -3,6 +3,7 @@
 
 #include "ast/type.h"
 #include <memory>
+#include <iostream>
 
 namespace AST
 {
@@ -10,7 +11,9 @@ class TypeBoolean final : public Type
 {
 private:
     TypeBoolean()
+        : Type(Location())
     {
+        std::cout << "made type Boolean" << std::endl;
     }
     TypeBoolean(const TypeBoolean &) = delete;
     void operator =(const TypeBoolean &) = delete;
@@ -21,10 +24,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeBoolean>(new TypeBoolean);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -42,7 +41,9 @@ class TypeDouble final : public Type
 {
 private:
     TypeDouble()
+        : Type(Location())
     {
+        std::cout << "made type Double" << std::endl;
     }
     TypeDouble(const TypeDouble &) = delete;
     void operator =(const TypeDouble &) = delete;
@@ -53,10 +54,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeDouble>(new TypeDouble);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -76,8 +73,11 @@ class TypeInteger final : public Type
 {
 private:
     TypeInteger()
+        : Type(Location())
     {
+        std::cout << "made type Integer" << std::endl;
     }
+
     TypeInteger(const TypeInteger &) = delete;
     void operator =(const TypeInteger &) = delete;
 public:
@@ -87,10 +87,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeInteger>(new TypeInteger);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -112,8 +108,11 @@ class TypeInt8 final : public Type
 {
 private:
     TypeInt8()
+        : Type(Location())
     {
+        std::cout << "made type Int8" << std::endl;
     }
+
     TypeInt8(const TypeInt8 &) = delete;
     void operator =(const TypeInt8 &) = delete;
 public:
@@ -123,10 +122,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeInt8>(new TypeInt8);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -148,8 +143,11 @@ class TypeInt16 final : public Type
 {
 private:
     TypeInt16()
+        : Type(Location())
     {
+        std::cout << "made type Int16" << std::endl;
     }
+
     TypeInt16(const TypeInt16 &) = delete;
     void operator =(const TypeInt16 &) = delete;
 public:
@@ -159,10 +157,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeInt16>(new TypeInt16);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -184,8 +178,11 @@ class TypeInt32 final : public Type
 {
 private:
     TypeInt32()
+        : Type(Location())
     {
+        std::cout << "made type Int32" << std::endl;
     }
+
     TypeInt32(const TypeInt32 &) = delete;
     void operator =(const TypeInt32 &) = delete;
 public:
@@ -195,10 +192,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeInt32>(new TypeInt32);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -220,8 +213,11 @@ class TypeInt64 final : public Type
 {
 private:
     TypeInt64()
+        : Type(Location())
     {
+        std::cout << "made type Int64" << std::endl;
     }
+
     TypeInt64(const TypeInt64 &) = delete;
     void operator =(const TypeInt64 &) = delete;
 public:
@@ -231,10 +227,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeInt64>(new TypeInt64);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -256,8 +248,11 @@ class TypeSingle final : public Type
 {
 private:
     TypeSingle()
+        : Type(Location())
     {
+        std::cout << "made type Single" << std::endl;
     }
+
     TypeSingle(const TypeSingle &) = delete;
     void operator =(const TypeSingle &) = delete;
 public:
@@ -267,10 +262,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeSingle>(new TypeSingle);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -288,8 +279,11 @@ class TypeString final : public Type
 {
 private:
     TypeString()
+        : Type(Location())
     {
+        std::cout << "made type String" << std::endl;
     }
+
     TypeString(const TypeString &) = delete;
     void operator =(const TypeString &) = delete;
 public:
@@ -299,10 +293,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeString>(new TypeString);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -320,8 +310,11 @@ class TypeUInt8 final : public Type
 {
 private:
     TypeUInt8()
+        : Type(Location())
     {
+        std::cout << "made type UInt8" << std::endl;
     }
+
     TypeUInt8(const TypeUInt8 &) = delete;
     void operator =(const TypeUInt8 &) = delete;
 public:
@@ -331,10 +324,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeUInt8>(new TypeUInt8);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -356,8 +345,11 @@ class TypeUInt16 final : public Type
 {
 private:
     TypeUInt16()
+        : Type(Location())
     {
+        std::cout << "made type UInt16" << std::endl;
     }
+
     TypeUInt16(const TypeUInt16 &) = delete;
     void operator =(const TypeUInt16 &) = delete;
 public:
@@ -367,10 +359,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeUInt16>(new TypeUInt16);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -392,8 +380,11 @@ class TypeUInt32 final : public Type
 {
 private:
     TypeUInt32()
+        : Type(Location())
     {
+        std::cout << "made type UInt32" << std::endl;
     }
+
     TypeUInt32(const TypeUInt32 &) = delete;
     void operator =(const TypeUInt32 &) = delete;
 public:
@@ -403,10 +394,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeUInt32>(new TypeUInt32);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {
@@ -428,8 +415,11 @@ class TypeUInt64 final : public Type
 {
 private:
     TypeUInt64()
+        : Type(Location())
     {
+        std::cout << "made type UInt64" << std::endl;
     }
+
     TypeUInt64(const TypeUInt64 &) = delete;
     void operator =(const TypeUInt64 &) = delete;
 public:
@@ -439,10 +429,6 @@ public:
         if(retval == nullptr)
             retval = std::shared_ptr<TypeUInt64>(new TypeUInt64);
         return retval;
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return getInstance();
     }
     virtual std::wstring toString() const override
     {

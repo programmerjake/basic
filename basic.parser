@@ -47,39 +47,43 @@ struct ParserValueType final
 
 class ParserBase;
 
-vector<AST::SymbolTable> &getSymbolTableStack(ParserBase *parser);
+vector<shared_ptr<AST::SymbolTable>> &getSymbolTableStack(ParserBase *parser);
 
 inline bool symbolExistsGlobal(ParserBase *parser, const wstring &name)
 {
-    vector<AST::SymbolTable> &sts = getSymbolTableStack(parser);
+    vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(parser);
     for(auto i = sts.rbegin(); i != sts.rend(); ++i)
     {
-        if(i->exists(name))
+        if((*i)->exists(name))
             return true;
     }
     return false;
 }
 
-void handleError(ParserBase *parser, Location location, const wstring &msg);
-inline void handleErrorNotImplemented(ParserBase *parser, Location location, const wstring &what)
+inline void handleError(Location location, const wstring &msg)
 {
-    handleError(parser, location, what + L" not implemented");
+    throw ParserError(location, msg);
 }
 
-inline void handleErrorNotImplemented(ParserBase *parser, Token t)
+inline void handleErrorNotImplemented(Location location, const wstring &what)
 {
-    handleErrorNotImplemented(parser, t.location, t.svalue);
+    handleError(location, what + L" not implemented");
+}
+
+inline void handleErrorNotImplemented(Token t)
+{
+    handleErrorNotImplemented(t.location, t.svalue);
 }
 
 inline const AST::Symbol &getSymbolGlobal(ParserBase *parser, Location location, const wstring &name)
 {
-    vector<AST::SymbolTable> &sts = getSymbolTableStack(parser);
+    vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(parser);
     for(auto i = sts.rbegin(); i != sts.rend(); ++i)
     {
-        if(i->exists(name))
-            return i->get(name);
+        if((*i)->exists(name))
+            return (*i)->get(name);
     }
-    handleError(parser, location, L"undeclared identifier : " + name);
+    handleError(location, L"undeclared identifier : " + name);
     throw logic_error("shouldn't be here");
 }
 
@@ -209,7 +213,7 @@ variableDeclaration: Dim {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});
     ;
 
 declaration: variableDeclaration {$$ = $1;}
-    | Type Id newLine typeDefinitionBlock End Type {handleErrorNotImplemented(this, $1.token);}
+    | Type Id newLine typeDefinitionBlock End Type {handleErrorNotImplemented($1.token);}
     | procedureDefinition {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
     | procedureDeclaration {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
     ;
@@ -222,15 +226,15 @@ typeDefinitionPartList: typeDefinitionPart {$$ = ParserValueType(vector<shared_p
     | typeDefinitionPartList ',' typeDefinitionPart {$$ = $1; $$.nodes.push_back($1.node);}
     ;
 
-procedureDefinition: Sub Id '(' fn_decl_arg_list ')' codeBlockWithNewLine End Sub {handleErrorNotImplemented(this, $1.token);}
-    | Function Id '(' fn_decl_arg_list ')' As type codeBlockWithNewLine End Function {handleErrorNotImplemented(this, $1.token);}
+procedureDefinition: Sub Id '(' fn_decl_arg_list ')' codeBlockWithNewLine End Sub {handleErrorNotImplemented($1.token);}
+    | Function Id '(' fn_decl_arg_list ')' As type codeBlockWithNewLine End Function {handleErrorNotImplemented($1.token);}
     ;
 
-procedureDeclaration: Declare Sub Id '(' fn_decl_arg_list ')' {handleErrorNotImplemented(this, $1.token.location, L"Declare Sub");}
-    | Declare Function Id '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented(this, $1.token.location, L"Declare Function");}
+procedureDeclaration: Declare Sub Id '(' fn_decl_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Declare Sub");}
+    | Declare Function Id '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented($1.token.location, L"Declare Function");}
     ;
 
-typeDefinitionPart: Id As type {handleErrorNotImplemented(this, $1.token.location, L"Type");}
+typeDefinitionPart: Id As type {handleErrorNotImplemented($1.token.location, L"Type");}
     | procedureDefinition {$$ = $1;}
     ;
 
@@ -238,15 +242,26 @@ declarationPartList: declarationPart {$$ = ParserValueType(vector<shared_ptr<AST
     | declarationPartList ',' declarationPart {$$ = $1; $$.nodes.push_back($3.node);}
     ;
 
-declarationPart: Id {handleErrorNotImplemented(this, $1.token.location, L"Dim");}
-    | Id '=' expression {handleErrorNotImplemented(this, $1.token.location, L"Dim");}
-    | Id As type {handleErrorNotImplemented(this, $1.token.location, L"Dim");}
-    | Id As type '=' expression {handleErrorNotImplemented(this, $1.token.location, L"Dim");}
+declarationPart: Id {handleErrorNotImplemented($1.token.location, L"Dim");}
+    | Id '=' expression {handleErrorNotImplemented($1.token.location, L"Dim");}
+    | Id As type {handleErrorNotImplemented($1.token.location, L"Dim");}
+    | Id As type '=' expression {handleErrorNotImplemented($1.token.location, L"Dim");}
     ;
 
-codeBlockWithNewLine: newLine {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
-    | codeBlockWithNewLine statementList newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
-    | codeBlockWithNewLine variableDeclaration newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
+codeBlockWithNewLine: codeBlockWithNewLineInternal
+    {
+        shared_ptr<AST::SymbolTable> st = getSymbolTableStack(this).back();
+        getSymbolTableStack(this).pop_back();
+        vector<shared_ptr<AST::Statement>> statements;
+        for(shared_ptr<AST::Base> n : $1.nodes)
+            statements.push_back(dynamic_pointer_cast<AST::Statement>(n));
+        $$ = ParserValueType(AST::CodeBlock::make($1.token.location, st, statements));
+    }
+    ;
+
+codeBlockWithNewLineInternal: newLine {getSymbolTableStack(this).push_back(AST::SymbolTable::make()); $$ = ParserValueType(vector<shared_ptr<AST::Base>>{}); $$.token.location = $1.token.location;}
+    | codeBlockWithNewLineInternal statementList newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
+    | codeBlockWithNewLineInternal variableDeclaration newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
     ;
 
 statementList: statement {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
@@ -262,35 +277,48 @@ inlineStatementList: inlineStatement {$$ = ParserValueType(vector<shared_ptr<AST
     | inlineStatementList ':' inlineStatement {$$ = $1; $$.nodes.push_back($3.node);}
     ;
 
-statement: If expression Then codeBlockWithNewLine elseSection End If {handleErrorNotImplemented(this, $1.token);}
-    | Do While expression codeBlockWithNewLine Loop {handleErrorNotImplemented(this, $1.token);}
-    | Do Until expression codeBlockWithNewLine Loop {handleErrorNotImplemented(this, $1.token);}
-    | Do codeBlockWithNewLine Loop While expression {handleErrorNotImplemented(this, $1.token);}
-    | Do codeBlockWithNewLine Loop Until expression {handleErrorNotImplemented(this, $1.token);}
-    | Do codeBlockWithNewLine Loop {handleErrorNotImplemented(this, $1.token);}
-    | While expression codeBlockWithNewLine WEnd {handleErrorNotImplemented(this, $1.token);}
-    | For variable '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented(this, $1.token);}
-    | For variable '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented(this, $1.token);}
-    | For Dim Id '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented(this, $1.token);}
-    | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented(this, $1.token);}
+statement: If expression Then codeBlockWithNewLine elseSection End If {handleErrorNotImplemented($1.token);}
+    | Do While expression codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
+    | Do Until expression codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
+    | Do codeBlockWithNewLine Loop While expression {handleErrorNotImplemented($1.token);}
+    | Do codeBlockWithNewLine Loop Until expression {handleErrorNotImplemented($1.token);}
+    | Do codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
+    | While expression codeBlockWithNewLine WEnd {handleErrorNotImplemented($1.token);}
+    | For variable '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | For variable '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | For Dim Id '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     ;
 
-inlineStatement: expression_no_equals '=' expression {handleErrorNotImplemented(this, $2.token.location, L"assignment");}
-    | Exit Do {handleErrorNotImplemented(this, $1.token.location, L"Exit Do");}
-    | Exit While {handleErrorNotImplemented(this, $1.token.location, L"Exit While");}
-    | Exit For {handleErrorNotImplemented(this, $1.token.location, L"Exit For");}
-    | Exit Sub {handleErrorNotImplemented(this, $1.token.location, L"Exit Sub");}
-    | Exit Function {handleErrorNotImplemented(this, $1.token.location, L"Exit Function");}
+inlineStatement: expression_no_equals '=' expression {handleErrorNotImplemented($2.token.location, L"assignment");}
+    | Exit Do {handleErrorNotImplemented($1.token.location, L"Exit Do");}
+    | Exit While {handleErrorNotImplemented($1.token.location, L"Exit While");}
+    | Exit For {handleErrorNotImplemented($1.token.location, L"Exit For");}
+    | Exit Sub {handleErrorNotImplemented($1.token.location, L"Exit Sub");}
+    | Exit Function {handleErrorNotImplemented($1.token.location, L"Exit Function");}
     | expression_no_equals {$$ = $1; wcout << L"debug: expression type = " << dynamic_cast<AST::Expression &>(*$1.node).type()->toString() << endl;}
     ;
 
-restOfLineStatement: If expression Then restOfLineStatementList {handleErrorNotImplemented(this, $1.token);}
-    | If expression Then inlineStatementList Else restOfLineStatementList {handleErrorNotImplemented(this, $1.token);}
+restOfLineStatement: If expression Then restOfLineStatementList {handleErrorNotImplemented($1.token);}
+    | If expression Then inlineStatementList Else restOfLineStatementList {handleErrorNotImplemented($1.token);}
+    ;
+
+ifStatement: ifStatementInternal End If {$$ = $1;}
+    ;
+
+ifStatementInternal: If expression Then codeBlockWithNewLine
+    {
+        $$ = ParserValueType(AST::IfStatement::make($1.token.location,
+                                                    vector<pair<shared_ptr<AST::Expression>, shared_ptr<AST::CodeBlock>>>(
+                                                    {
+                                                        pair<shared_ptr<AST::Expression>, shared_ptr<AST::CodeBlock>>(dynamic_pointer_cast<AST::Expression>($2.node), dynamic_pointer_cast<AST::CodeBlock>($4.node))
+                                                    })));
+    }
     ;
 
 elseSection:
-    | Else codeBlockWithNewLine {handleErrorNotImplemented(this, $1.token);}
-    | ElseIf expression Then codeBlockWithNewLine elseSection {handleErrorNotImplemented(this, $1.token);}
+    | Else codeBlockWithNewLine {handleErrorNotImplemented($1.token);}
+    | ElseIf expression Then codeBlockWithNewLine elseSection {handleErrorNotImplemented($1.token);}
     ;
 
 expression: or_expression {$$ = $1;}
@@ -300,125 +328,125 @@ expression_no_equals: or_expression_no_equals {$$ = $1;}
     ;
 
 or_expression: xor_expression {$$ = $1;}
-    | or_expression Or xor_expression {$$ = ParserValueType(AST::OrExpression::make(dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node), [&](const wstring &msg){::handleError(this, $2.token.location, msg);}));}
+    | or_expression Or xor_expression {$$ = ParserValueType(AST::OrExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 or_expression_no_equals: xor_expression_no_equals {$$ = $1;}
-    | or_expression_no_equals Or xor_expression_no_equals {$$ = ParserValueType(AST::OrExpression::make(dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node), [&](const wstring &msg){::handleError(this, $2.token.location, msg);}));}
+    | or_expression_no_equals Or xor_expression_no_equals {$$ = ParserValueType(AST::OrExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 xor_expression: and_expression {$$ = $1;}
-    | xor_expression Xor and_expression {$$ = ParserValueType(AST::XorExpression::make(dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node), [&](const wstring &msg){::handleError(this, $2.token.location, msg);}));}
+    | xor_expression Xor and_expression {$$ = ParserValueType(AST::XorExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 xor_expression_no_equals: and_expression_no_equals {$$ = $1;}
-    | xor_expression_no_equals Xor and_expression_no_equals {$$ = ParserValueType(AST::XorExpression::make(dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node), [&](const wstring &msg){::handleError(this, $2.token.location, msg);}));}
+    | xor_expression_no_equals Xor and_expression_no_equals {$$ = ParserValueType(AST::XorExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 and_expression: not_expression {$$ = $1;}
-    | and_expression And not_expression {$$ = ParserValueType(AST::AndExpression::make(dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node), [&](const wstring &msg){::handleError(this, $2.token.location, msg);}));}
+    | and_expression And not_expression {$$ = ParserValueType(AST::AndExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 and_expression_no_equals: not_expression_no_equals {$$ = $1;}
-    | and_expression_no_equals And not_expression_no_equals {$$ = ParserValueType(AST::AndExpression::make(dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node), [&](const wstring &msg){::handleError(this, $2.token.location, msg);}));}
+    | and_expression_no_equals And not_expression_no_equals {$$ = ParserValueType(AST::AndExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 not_expression: compare_expression {$$ = $1;}
-    | Not not_expression {handleErrorNotImplemented(this, $1.token);}
+    | Not not_expression {handleErrorNotImplemented($1.token);}
     ;
 
 not_expression_no_equals: compare_expression_no_equals {$$ = $1;}
-    | Not not_expression_no_equals {handleErrorNotImplemented(this, $1.token);}
+    | Not not_expression_no_equals {handleErrorNotImplemented($1.token);}
     ;
 
 compare_expression: add_expression {$$ = $1;}
-    | compare_expression '<' add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression '>' add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression LogicalLE add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression LogicalGE add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression '=' add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression LogicalNE add_expression {handleErrorNotImplemented(this, $2.token);}
+    | compare_expression '<' add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression '>' add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression LogicalLE add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression LogicalGE add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression '=' add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression LogicalNE add_expression {handleErrorNotImplemented($2.token);}
     ;
 
 compare_expression_no_equals: add_expression {$$ = $1;}
-    | compare_expression_no_equals '<' add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression_no_equals '>' add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression_no_equals LogicalLE add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression_no_equals LogicalGE add_expression {handleErrorNotImplemented(this, $2.token);}
-    | compare_expression_no_equals LogicalNE add_expression {handleErrorNotImplemented(this, $2.token);}
+    | compare_expression_no_equals '<' add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression_no_equals '>' add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression_no_equals LogicalLE add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression_no_equals LogicalGE add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression_no_equals LogicalNE add_expression {handleErrorNotImplemented($2.token);}
     ;
 
 add_expression: mod_expression {$$ = $1;}
-    | add_expression '+' mod_expression {handleErrorNotImplemented(this, $2.token.location, L"binary +");}
-    | add_expression '-' mod_expression {handleErrorNotImplemented(this, $2.token.location, L"binary -");}
+    | add_expression '+' mod_expression {handleErrorNotImplemented($2.token.location, L"binary +");}
+    | add_expression '-' mod_expression {handleErrorNotImplemented($2.token.location, L"binary -");}
     ;
 
 mod_expression: mul_expression {$$ = $1;}
-    | mod_expression Mod mul_expression {handleErrorNotImplemented(this, $2.token);}
-    | mod_expression '\\' mul_expression {handleErrorNotImplemented(this, $2.token);}
+    | mod_expression Mod mul_expression {handleErrorNotImplemented($2.token);}
+    | mod_expression '\\' mul_expression {handleErrorNotImplemented($2.token);}
     ;
 
 mul_expression: neg_expression {$$ = $1;}
-    | mul_expression '*' neg_expression {handleErrorNotImplemented(this, $2.token);}
-    | mul_expression '/' neg_expression {handleErrorNotImplemented(this, $2.token);}
+    | mul_expression '*' neg_expression {handleErrorNotImplemented($2.token);}
+    | mul_expression '/' neg_expression {handleErrorNotImplemented($2.token);}
     ;
 
 neg_expression: toplevel_expression {$$ = $1;}
-    | '-' neg_expression {handleErrorNotImplemented(this, $1.token.location, L"unary -");}
-    | '+' neg_expression {handleErrorNotImplemented(this, $1.token.location, L"unary +");}
+    | '-' neg_expression {handleErrorNotImplemented($1.token.location, L"unary -");}
+    | '+' neg_expression {handleErrorNotImplemented($1.token.location, L"unary +");}
     ;
 
-toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpression::make($1.token.svalue));}
-    | IntegerLiteral {$$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.svalue));}
-    | SingleLiteral {$$ = ParserValueType(AST::SingleLiteralExpression::make($1.token.getFloatingPointLiteralValue()));}
-    | DoubleLiteral {$$ = ParserValueType(AST::DoubleLiteralExpression::make($1.token.getFloatingPointLiteralValue()));}
-    | True {$$ = ParserValueType(AST::BooleanLiteralExpression::make(true));}
-    | False {$$ = ParserValueType(AST::BooleanLiteralExpression::make(false));}
+toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpression::make($1.token.location, $1.token.svalue));}
+    | IntegerLiteral {$$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue));}
+    | SingleLiteral {$$ = ParserValueType(AST::SingleLiteralExpression::make($1.token.location, $1.token.getFloatingPointLiteralValue()));}
+    | DoubleLiteral {$$ = ParserValueType(AST::DoubleLiteralExpression::make($1.token.location, $1.token.getFloatingPointLiteralValue()));}
+    | True {$$ = ParserValueType(AST::BooleanLiteralExpression::make($1.token.location, true));}
+    | False {$$ = ParserValueType(AST::BooleanLiteralExpression::make($1.token.location, false));}
     | '(' expression ')' {$$ = $2;}
-    | Abs '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Asc '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | ATn '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Chr '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Cos '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | CBool '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeBoolean::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CU8/*=CByte*/ '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt8::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CU16 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt16::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CU32 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt16::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CU64 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt16::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CSng '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeSingle::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CStr '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeString::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CDbl '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeDouble::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CInt '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInteger::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CI8 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt8::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CI16 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt16::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CI32 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt32::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | CI64 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt64::getInstance(), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | Cast '(' type ',' expression ')' {$$ = ParserValueType(AST::CastExpression::make(dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<const AST::Type>($3.node), false, [&](const wstring &msg){::handleError(this, $1.token.location, msg);}));}
-    | Exp '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Hex '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError(this, $1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
-    | toplevel_expression '[' expression ']' {handleErrorNotImplemented(this, $2.token.location, L"array index");}
-    | toplevel_expression '(' fn_arg_list ')' {handleErrorNotImplemented(this, $1.token.location, L"Function call");}
-    | Instr '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Instr '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | LBound '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | LBound '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | LCase '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Left '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Mid '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Mid '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Oct '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Right '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | RTrim '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Sgn '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Sin '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Space '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | String '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Tan '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | UBound '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | UBound '(' expression ',' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | UCase '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
-    | Val '(' expression ')' {handleErrorNotImplemented(this, $1.token);}
+    | Abs '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Asc '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | ATn '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Chr '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Cos '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | CBool '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeBoolean::getInstance(), false));}
+    | CU8/*=CByte*/ '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt8::getInstance(), false));}
+    | CU16 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt16::getInstance(), false));}
+    | CU32 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt32::getInstance(), false));}
+    | CU64 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt64::getInstance(), false));}
+    | CSng '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeSingle::getInstance(), false));}
+    | CStr '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeString::getInstance(), false));}
+    | CDbl '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeDouble::getInstance(), false));}
+    | CInt '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInteger::getInstance(), false));}
+    | CI8 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt8::getInstance(), false));}
+    | CI16 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt16::getInstance(), false));}
+    | CI32 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt32::getInstance(), false));}
+    | CI64 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt64::getInstance(), false));}
+    | Cast '(' type ',' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<const AST::Type>($3.node), false));}
+    | Exp '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Hex '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError($1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
+    | toplevel_expression '[' expression ']' {handleErrorNotImplemented($2.token.location, L"array index");}
+    | toplevel_expression '(' fn_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Function call");}
+    | Instr '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | Instr '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | LBound '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | LBound '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | LCase '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Left '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | Mid '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | Mid '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | Oct '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Right '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | RTrim '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Sgn '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Sin '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Space '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | String '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | Tan '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | UBound '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | UBound '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | UCase '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Val '(' expression ')' {handleErrorNotImplemented($1.token);}
     ;
 
 fn_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
@@ -433,10 +461,10 @@ fn_decl_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     | fn_decl_arg_list_non_empty {$$ = $1;}
     ;
 
-fn_decl_arg_list_non_empty: Id As type {handleErrorNotImplemented(this, $1.token.location, L"procedure argument");}
-    | As type {handleErrorNotImplemented(this, $1.token.location, L"procedure argument");}
-    | fn_decl_arg_list_non_empty ',' As type {handleErrorNotImplemented(this, $1.token.location, L"procedure argument");}
-    | fn_decl_arg_list_non_empty ',' Id As type {handleErrorNotImplemented(this, $1.token.location, L"procedure argument");}
+fn_decl_arg_list_non_empty: Id As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
+    | As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
+    | fn_decl_arg_list_non_empty ',' As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
+    | fn_decl_arg_list_non_empty ',' Id As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
     ;
 
 type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
@@ -451,17 +479,17 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     | UInt16  {$$ = ParserValueType(AST::TypeUInt16::getInstance());}
     | UInt32  {$$ = ParserValueType(AST::TypeUInt32::getInstance());}
     | UInt64  {$$ = ParserValueType(AST::TypeUInt64::getInstance());}
-    | ByRef type {$$ = ParserValueType(); handleErrorNotImplemented(this, $1.token);}
+    | ByRef type {$$ = ParserValueType(); handleErrorNotImplemented($1.token);}
     | ByVal type {$$ = ParserValueType(dynamic_pointer_cast<const AST::Type>($2.node)->toRValue());}
-    | Function '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented(this, $1.token.location, L"Function type");}
-    | Sub '(' fn_decl_arg_list ')' {handleErrorNotImplemented(this, $1.token.location, L"Sub type");}
+    | Function '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented($1.token.location, L"Function type");}
+    | Sub '(' fn_decl_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Sub type");}
     | TypeOf '(' expression ')' {$$ = ParserValueType(dynamic_pointer_cast<AST::Expression>($3.node)->type()->toRValue());}
-    | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::Type) ::handleError(this, $1.token.location, $1.token.svalue + L" is not a type"); $$ = ParserValueType(symbol.value);}
+    | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::Type) ::handleError($1.token.location, $1.token.svalue + L" is not a type"); $$ = ParserValueType(symbol.value);}
     ;
 
-newLine: '\n' {}
-    | EOF {}
-    | newLine '\n' {}
+newLine: '\n' {$$ = $1;}
+    | EOF {$$ = $1;}
+    | newLine '\n' {$$ = $1;}
     ;
 %%
 %{
@@ -476,25 +504,22 @@ class Parser : public ParserBase
 {
     Tokenizer tokenizer;
 public:
-    void handleError(Location location, const wstring &msg) const
-    {
-        wostringstream ss;
-        ss << location.fileName << L":" << location.line << L":" << location.col << L": error: " << msg;
-        throw ParseError(string_cast<string>(ss.str()));
-    }
     explicit Parser(shared_ptr<InputStream> is)
         : tokenizer(is)
     {
     }
-    vector<AST::SymbolTable> symbolTableStack;
+    vector<shared_ptr<AST::SymbolTable>> symbolTableStack;
+    Location lastTokenLocation;
 protected:
     virtual ParserValueType getToken() override
     {
-        return ParserValueType(tokenizer.getToken());
+        Token token = tokenizer.getToken();
+        lastTokenLocation = token.location;
+        return ParserValueType(token);
     }
 };
 
-vector<AST::SymbolTable> &getSymbolTableStack(ParserBase *parser)
+vector<shared_ptr<AST::SymbolTable>> &getSymbolTableStack(ParserBase *parser)
 {
     Parser *theParser = dynamic_cast<Parser *>(parser);
     assert(theParser != nullptr);
@@ -503,14 +528,15 @@ vector<AST::SymbolTable> &getSymbolTableStack(ParserBase *parser)
 
 ParserValueType parseAll(shared_ptr<InputStream> is)
 {
-    return Parser(is).parse();
-}
-
-void handleError(ParserBase *parser, Location location, const wstring &msg)
-{
-    Parser *theParser = dynamic_cast<Parser *>(parser);
-    assert(theParser != nullptr);
-    theParser->handleError(location, msg);
+    Parser parser(is);
+    try
+    {
+        return parser.parse();
+    }
+    catch(ParserBase::ParseError &e)
+    {
+        throw ParserError(parser.lastTokenLocation, string_cast<wstring>(e.what()));
+    }
 }
 
 %}

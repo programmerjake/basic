@@ -11,20 +11,8 @@
 #include <sstream>
 #include <cmath>
 #include "string_cast.h"
-
-struct Location final
-{
-    size_t line, col;
-    std::wstring fileName;
-    Location()
-        : line(1), col(1), fileName(L"")
-    {
-    }
-    Location(size_t line, size_t col, std::wstring fileName)
-        : line(line), col(col), fileName(fileName)
-    {
-    }
-};
+#include "location.h"
+#include "error.h"
 
 enum class TokenType : std::int_fast32_t
 {
@@ -286,24 +274,6 @@ struct InputStream
     }
     virtual int getChar() = 0;
     virtual std::wstring getName() = 0;
-};
-
-class TokenizerError final : public std::runtime_error
-{
-private:
-    static std::string makeMessage(Location location, const std::wstring &msg)
-    {
-        std::wostringstream ss;
-        ss << location.fileName << L":" << location.line << L":" << location.col << L": error: " << msg;
-        return string_cast<std::string>(ss.str());
-    }
-public:
-    Location location;
-    std::wstring msg;
-    TokenizerError(Location location, const std::wstring &msg)
-        : runtime_error(makeMessage(location, msg)), location(location), msg(msg)
-    {
-    }
 };
 
 class Tokenizer final

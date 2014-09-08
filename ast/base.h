@@ -2,24 +2,35 @@
 #define BASE_H_INCLUDED
 
 #include <memory>
+#include "location.h"
 
 namespace AST
 {
 class Base : public std::enable_shared_from_this<Base>
 {
     void operator =(const Base &) = delete;
+    Location location_;
 protected:
-    Base(const Base &)
+    Base(const Base &rt)
+        : location_(rt.location_)
     {
     }
+    void location(Location l)
+    {
+        location_ = l;
+    }
 public:
-    Base()
+    const Location &location() const
+    {
+        return location_;
+    }
+    explicit Base(Location location)
+        : location_(location)
     {
     }
     virtual ~Base()
     {
     }
-    virtual std::shared_ptr<Base> dup() const = 0;
 };
 }
 

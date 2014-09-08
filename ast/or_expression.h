@@ -13,21 +13,17 @@ namespace AST
 {
 class OrExpression final : public Expression
 {
-    void calcType(std::function<void(const std::wstring &)> handleError); // in expressions.cpp
-    OrExpression(std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::function<void(const std::wstring &)> handleError)
-        : Expression(nullptr)
+    void calcType(); // in expressions.cpp
+    OrExpression(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
+        : Expression(location, nullptr)
     {
         argsRef() = std::initializer_list<std::shared_ptr<Expression>>{arg1, arg2};
-        calcType(handleError);
+        calcType();
     }
 public:
-    static std::shared_ptr<OrExpression> make(std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::function<void(const std::wstring &)> handleError)
+    static std::shared_ptr<OrExpression> make(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
     {
-        return std::shared_ptr<OrExpression>(new OrExpression(arg1, arg2, handleError));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return std::shared_ptr<OrExpression>(new OrExpression(*this));
+        return std::shared_ptr<OrExpression>(new OrExpression(location, arg1, arg2));
     }
 };
 }

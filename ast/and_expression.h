@@ -3,6 +3,7 @@
 
 #include "ast/expression.h"
 #include "ast/type.h"
+#include "location.h"
 #include <memory>
 #include <functional>
 #include <cwchar>
@@ -13,21 +14,17 @@ namespace AST
 {
 class AndExpression final : public Expression
 {
-    void calcType(std::function<void(const std::wstring &)> handleError); // in expressions.cpp
-    AndExpression(std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::function<void(const std::wstring &)> handleError)
-        : Expression(nullptr)
+    void calcType(); // in expressions.cpp
+    AndExpression(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
+        : Expression(location, nullptr)
     {
         argsRef() = std::initializer_list<std::shared_ptr<Expression>>{arg1, arg2};
-        calcType(handleError);
+        calcType();
     }
 public:
-    static std::shared_ptr<AndExpression> make(std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::function<void(const std::wstring &)> handleError)
+    static std::shared_ptr<AndExpression> make(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
     {
-        return std::shared_ptr<AndExpression>(new AndExpression(arg1, arg2, handleError));
-    }
-    virtual std::shared_ptr<Base> dup() const override
-    {
-        return std::shared_ptr<AndExpression>(new AndExpression(*this));
+        return std::shared_ptr<AndExpression>(new AndExpression(location, arg1, arg2));
     }
 };
 }

@@ -37,10 +37,13 @@
 		<Unit filename="ast/and_expression.h" />
 		<Unit filename="ast/base.h" />
 		<Unit filename="ast/cast_expression.h" />
+		<Unit filename="ast/code_block.h" />
 		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/expressions.cpp" />
+		<Unit filename="ast/if_statement.h" />
 		<Unit filename="ast/literal_expression.h" />
 		<Unit filename="ast/or_expression.h" />
+		<Unit filename="ast/statement.h" />
 		<Unit filename="ast/symbol_table.h" />
 		<Unit filename="ast/type.h" />
 		<Unit filename="ast/type_builtin.cpp" />
@@ -49,10 +52,14 @@
 		<Unit filename="basic.parser">
 			<Option compile="1" />
 			<Option link="1" />
-			<Option weight="40" />
-			<Option compiler="gcc" use="1" buildCommand="parser-generator -v basic.parser &amp;&amp; $compiler $options $includes -c basic.parser.cpp -o $object" />
+			<Option weight="60" />
+			<Option compiler="gcc" use="1" buildCommand="(test basic.parser -ot basic.parser.cpp -a basic.parser -ot basic.parser.h || (echo parser-generator -v basic.parser; parser-generator -v basic.parser)) &amp;&amp; (echo $compiler $options $includes -c basic.parser.cpp -o $object; $compiler $options $includes -c basic.parser.cpp -o $object)" />
 		</Unit>
-		<Unit filename="main.cpp" />
+		<Unit filename="error.h" />
+		<Unit filename="location.h" />
+		<Unit filename="main.cpp">
+			<Option weight="70" />
+		</Unit>
 		<Unit filename="string_cast.h" />
 		<Unit filename="tokenizer.h" />
 		<Extensions>

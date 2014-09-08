@@ -1,20 +1,21 @@
 #ifndef EXPRESSION_H_INCLUDED
 #define EXPRESSION_H_INCLUDED
 
-#include "base.h"
-#include "type.h"
+#include "ast/statement.h"
+#include "location.h"
+#include "ast/type.h"
 #include <memory>
 #include <vector>
 
 namespace AST
 {
-class Expression : public Base
+class Expression : public Statement
 {
     std::shared_ptr<const Type> type_;
     std::vector<std::shared_ptr<Expression>> args_;
 protected:
     Expression(const Expression &rt)
-        : Base(rt), type_(rt.type_), args_(rt.args_)
+        : Statement(rt), type_(rt.type_), args_(rt.args_)
     {
     }
     std::vector<std::shared_ptr<Expression>> &argsRef()
@@ -34,8 +35,8 @@ public:
     {
         return args_;
     }
-    explicit Expression(std::shared_ptr<const Type> type)
-        : type_(type)
+    explicit Expression(Location location, std::shared_ptr<const Type> type)
+        : Statement(location), type_(type)
     {
     }
 };
