@@ -118,7 +118,7 @@ ParserValueType parseAll(shared_ptr<InputStream> is);
 %token Case
 %token Cast
 %token CBool
-%token CDouble
+%token CDbl
 %token CInt
 %token CI8
 %token CI16
@@ -165,6 +165,7 @@ ParserValueType parseAll(shared_ptr<InputStream> is);
 %token LTrim
 %token Mid
 %token Mod
+%token Next
 %token Not
 %token Oct
 %token Or
@@ -284,8 +285,8 @@ statement: ifStatement {$$ = $1;}
     | Do codeBlockWithNewLine Loop Until expression {handleErrorNotImplemented($1.token);}
     | Do codeBlockWithNewLine Loop {handleErrorNotImplemented($1.token);}
     | While expression codeBlockWithNewLine WEnd {handleErrorNotImplemented($1.token);}
-    | For variable '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
-    | For variable '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | For expression_no_equals '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | For expression_no_equals '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     | For Dim Id '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     ;
@@ -440,8 +441,8 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError($1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
     | toplevel_expression '[' expression ']' {handleErrorNotImplemented($2.token.location, L"array index");}
     | toplevel_expression '(' fn_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Function call");}
-    | Instr '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | Instr '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | InStr '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
+    | InStr '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
     | LBound '(' expression ')' {handleErrorNotImplemented($1.token);}
     | LBound '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
     | LCase '(' expression ')' {handleErrorNotImplemented($1.token);}
@@ -501,7 +502,6 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     ;
 
 newLine: '\n' {$$ = $1;}
-    | EOF {$$ = $1;}
     | newLine '\n' {$$ = $1;}
     ;
 %%

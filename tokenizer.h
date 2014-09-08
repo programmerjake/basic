@@ -38,7 +38,7 @@ enum class TokenType : std::int_fast32_t
     TTCase,
     TTCast,
     TTCBool,
-    TTCDouble,
+    TTCDbl,
     TTCInt,
     TTCI8,
     TTCI16,
@@ -85,6 +85,7 @@ enum class TokenType : std::int_fast32_t
     TTLTrim,
     TTMid,
     TTMod,
+    TTNext,
     TTNot,
     TTOct,
     TTOr,
@@ -285,6 +286,7 @@ class Tokenizer final
     int peekChar;
     bool isExtraChar = false; // used for duplicating end line characters for interactive input
     bool isInteractive;
+    bool gotEof = false;
     static void handleError(Location location, const std::wstring &msg)
     {
         throw TokenizerError(location, msg);
@@ -492,7 +494,7 @@ class Tokenizer final
             {L"Cast", TokenType::TTCast},
             {L"CBool", TokenType::TTCBool},
             {L"CByte", TokenType::TTCByte},
-            {L"CDouble", TokenType::TTCDouble},
+            {L"CDbl", TokenType::TTCDbl},
             {L"Chr", TokenType::TTChr},
             {L"CI16", TokenType::TTCI16},
             {L"CI32", TokenType::TTCI32},
@@ -538,6 +540,7 @@ class Tokenizer final
             {L"LTrim", TokenType::TTLTrim},
             {L"Mid", TokenType::TTMid},
             {L"Mod", TokenType::TTMod},
+            {L"Next", TokenType::TTNext},
             {L"Not", TokenType::TTNot},
             {L"Oct", TokenType::TTOct},
             {L"Or", TokenType::TTOr},
@@ -633,7 +636,10 @@ public:
             switch(peekChar)
             {
             case EOF:
-                return Token(TokenType::TTEOF, tokenLocation);
+                if(gotEof)
+                    return Token(TokenType::TTEOF, tokenLocation);
+                gotEof = true;
+                return Token((TokenType)'\n', tokenLocation, L"\n");
             case '\n':
             case '(':
             case ')':
