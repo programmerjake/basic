@@ -99,10 +99,13 @@ struct MemoryInputStream : public FileInputStream
 string getInput()
 {
     return string(R"a(
-Do While True Or False
-    If True And False Then
+Dim a as integer, b as single, c as boolean
+Do While c Or False
+    If True And c Then
         Cast(TypeOf(1), 1.5)
-    ElseIf False Then
+    ElseIf c Then
+        cast(byref typeof(a), a)
+        csng(b)
     Else
     End If
 Loop

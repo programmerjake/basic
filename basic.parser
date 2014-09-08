@@ -5,6 +5,7 @@
 #include <memory>
 #include <iostream>
 #include <vector>
+#include <cassert>
 #include "tokenizer.h"
 #include "ast/all.h"
 
@@ -203,10 +204,8 @@ ParserValueType parseAll(shared_ptr<InputStream> is);
 %token Xor
 %%
 
-program: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
-    | newLine {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
-    | program declaration newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
-    | program statementList newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
+program: codeBlock {$$ = $1;}
+    | newLine codeBlock {$$ = $2;}
     ;
 
 variableDeclaration: Dim {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
@@ -239,17 +238,42 @@ typeDefinitionPart: Id As type {handleErrorNotImplemented($1.token.location, L"T
     | procedureDefinition {$$ = $1;}
     ;
 
-declarationPartList: declarationPart {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
-    | declarationPartList ',' declarationPart {$$ = $1; $$.nodes.push_back($3.node);}
+declarationPartList: declarationPart {$$ = $1;}
+    | declarationPartList ',' declarationPart {$$ = $1; $$.nodes.insert($$.nodes.end(), $3.nodes.begin(), $3.nodes.end());}
     ;
 
-declarationPart: Id {handleErrorNotImplemented($1.token.location, L"Dim");}
-    | Id '=' expression {handleErrorNotImplemented($1.token.location, L"Dim");}
-    | Id As type {handleErrorNotImplemented($1.token.location, L"Dim");}
-    | Id As type '=' expression {handleErrorNotImplemented($1.token.location, L"Dim");}
+declarationPart: Id '=' expression {handleErrorNotImplemented($4.token);}
+    | Id As type
+    {
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
+        wstring name = $1.token.svalue;
+        Location location = $1.token.location;
+        shared_ptr<AST::Variable> variable;
+        AST::Symbol::Type stype;
+        if(type->isLValue())
+        {
+            handleErrorNotImplemented(location, L"ByRef variable");
+        }
+        else
+        {
+            type = AST::TypeReference::make(location, type);
+            variable = AST::AutoVariable::make(location, type, name);
+            stype = AST::Symbol::Type::AutoVariable;
+        }
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+            ::handleError(location, name + L" already defined");
+        sts.back()->make(AST::Symbol(name, stype, type, variable));
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
+    }
+    | Id As type '=' expression {handleErrorNotImplemented($4.token);}
     ;
 
-codeBlockWithNewLine: codeBlockWithNewLineInternal
+codeBlockWithNewLine: newLine codeBlock {$$ = $2;}
+    ;
+
+codeBlock: codeBlockInternal
     {
         shared_ptr<AST::SymbolTable> st = getSymbolTableStack(this).back();
         getSymbolTableStack(this).pop_back();
@@ -260,9 +284,9 @@ codeBlockWithNewLine: codeBlockWithNewLineInternal
     }
     ;
 
-codeBlockWithNewLineInternal: newLine {getSymbolTableStack(this).push_back(AST::SymbolTable::make()); $$ = ParserValueType(vector<shared_ptr<AST::Base>>{}); $$.token.location = $1.token.location;}
-    | codeBlockWithNewLineInternal statementList newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
-    | codeBlockWithNewLineInternal variableDeclaration newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
+codeBlockInternal: {getSymbolTableStack(this).push_back(AST::SymbolTable::make()); $$ = ParserValueType(vector<shared_ptr<AST::Base>>{}); $$.token.location = peekToken.token.location;}
+    | codeBlockInternal statementList newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
+    | codeBlockInternal declaration newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
     ;
 
 statementList: statement {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
@@ -528,7 +552,7 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     | UInt16  {$$ = ParserValueType(AST::TypeUInt16::getInstance());}
     | UInt32  {$$ = ParserValueType(AST::TypeUInt32::getInstance());}
     | UInt64  {$$ = ParserValueType(AST::TypeUInt64::getInstance());}
-    | ByRef type {$$ = ParserValueType(); handleErrorNotImplemented($1.token);}
+    | ByRef type {$$ = ParserValueType(AST::TypeReference::make($1.token.location, dynamic_pointer_cast<const AST::Type>($2.node)->toRValue()));}
     | ByVal type {$$ = ParserValueType(dynamic_pointer_cast<const AST::Type>($2.node)->toRValue());}
     | Function '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented($1.token.location, L"Function type");}
     | Sub '(' fn_decl_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Sub type");}

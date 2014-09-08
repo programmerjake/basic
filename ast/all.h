@@ -16,5 +16,7 @@
 #include "ast/if_statement.h"
 #include "ast/while_statement.h"
 #include "ast/do_statement.h"
+#include "ast/type_reference.h"
+#include "ast/variable.h"
 
 #endif // ALL_H_INCLUDED

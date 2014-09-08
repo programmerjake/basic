@@ -37,9 +37,9 @@ public:
     {
         return stype_;
     }
-    std::shared_ptr<AST::Type> type;
+    std::shared_ptr<const AST::Type> type;
     std::shared_ptr<Base> value;
-    explicit Symbol(const std::wstring &name, Type stype, std::shared_ptr<AST::Type> type = nullptr, std::shared_ptr<Base> value = nullptr)
+    explicit Symbol(const std::wstring &name, Type stype, std::shared_ptr<const AST::Type> type = nullptr, std::shared_ptr<Base> value = nullptr)
         : name_(name), stype_(stype), type(type), value(value)
     {
     }

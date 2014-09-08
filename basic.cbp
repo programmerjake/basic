@@ -50,6 +50,8 @@
 		<Unit filename="ast/type.h" />
 		<Unit filename="ast/type_builtin.cpp" />
 		<Unit filename="ast/type_builtin.h" />
+		<Unit filename="ast/type_reference.h" />
+		<Unit filename="ast/variable.h" />
 		<Unit filename="ast/while_statement.h" />
 		<Unit filename="ast/xor_expression.h" />
 		<Unit filename="basic.parser">

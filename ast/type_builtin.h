@@ -13,7 +13,7 @@ private:
     TypeBoolean()
         : Type(Location())
     {
-        std::cout << "made type Boolean" << std::endl;
+        //std::cout << "made type Boolean" << std::endl;
     }
     TypeBoolean(const TypeBoolean &) = delete;
     void operator =(const TypeBoolean &) = delete;
@@ -43,7 +43,7 @@ private:
     TypeDouble()
         : Type(Location())
     {
-        std::cout << "made type Double" << std::endl;
+        //std::cout << "made type Double" << std::endl;
     }
     TypeDouble(const TypeDouble &) = delete;
     void operator =(const TypeDouble &) = delete;
@@ -75,7 +75,7 @@ private:
     TypeInteger()
         : Type(Location())
     {
-        std::cout << "made type Integer" << std::endl;
+        //std::cout << "made type Integer" << std::endl;
     }
 
     TypeInteger(const TypeInteger &) = delete;
@@ -110,7 +110,7 @@ private:
     TypeInt8()
         : Type(Location())
     {
-        std::cout << "made type Int8" << std::endl;
+        //std::cout << "made type Int8" << std::endl;
     }
 
     TypeInt8(const TypeInt8 &) = delete;
@@ -145,7 +145,7 @@ private:
     TypeInt16()
         : Type(Location())
     {
-        std::cout << "made type Int16" << std::endl;
+        //std::cout << "made type Int16" << std::endl;
     }
 
     TypeInt16(const TypeInt16 &) = delete;
@@ -180,7 +180,7 @@ private:
     TypeInt32()
         : Type(Location())
     {
-        std::cout << "made type Int32" << std::endl;
+        //std::cout << "made type Int32" << std::endl;
     }
 
     TypeInt32(const TypeInt32 &) = delete;
@@ -215,7 +215,7 @@ private:
     TypeInt64()
         : Type(Location())
     {
-        std::cout << "made type Int64" << std::endl;
+        //std::cout << "made type Int64" << std::endl;
     }
 
     TypeInt64(const TypeInt64 &) = delete;
@@ -250,7 +250,7 @@ private:
     TypeSingle()
         : Type(Location())
     {
-        std::cout << "made type Single" << std::endl;
+        //std::cout << "made type Single" << std::endl;
     }
 
     TypeSingle(const TypeSingle &) = delete;
@@ -281,7 +281,7 @@ private:
     TypeString()
         : Type(Location())
     {
-        std::cout << "made type String" << std::endl;
+        //std::cout << "made type String" << std::endl;
     }
 
     TypeString(const TypeString &) = delete;
@@ -312,7 +312,7 @@ private:
     TypeUInt8()
         : Type(Location())
     {
-        std::cout << "made type UInt8" << std::endl;
+        //std::cout << "made type UInt8" << std::endl;
     }
 
     TypeUInt8(const TypeUInt8 &) = delete;
@@ -347,7 +347,7 @@ private:
     TypeUInt16()
         : Type(Location())
     {
-        std::cout << "made type UInt16" << std::endl;
+        //std::cout << "made type UInt16" << std::endl;
     }
 
     TypeUInt16(const TypeUInt16 &) = delete;
@@ -382,7 +382,7 @@ private:
     TypeUInt32()
         : Type(Location())
     {
-        std::cout << "made type UInt32" << std::endl;
+        //std::cout << "made type UInt32" << std::endl;
     }
 
     TypeUInt32(const TypeUInt32 &) = delete;
@@ -417,7 +417,7 @@ private:
     TypeUInt64()
         : Type(Location())
     {
-        std::cout << "made type UInt64" << std::endl;
+        //std::cout << "made type UInt64" << std::endl;
     }
 
     TypeUInt64(const TypeUInt64 &) = delete;
