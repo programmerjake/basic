@@ -1,26 +1,17 @@
-#ifndef CODE_WRITER_C_H_INCLUDED
-#define CODE_WRITER_C_H_INCLUDED
+#ifndef CODE_WRITER_DUMP_H_INCLUDED
+#define CODE_WRITER_DUMP_H_INCLUDED
 
 #include "code_writer.h"
 #include <ostream>
-#include <sstream>
-#include <string>
 #include <memory>
 
-class CodeWriterC final : public CodeWriter
+class CodeWriterDump final : public CodeWriter
 {
 private:
-    std::wstring createVariableName(std::wstring name)
-    {
-        return L"v_" + name;
-    }
-    std::shared_ptr<std::ostream> sourceStream;
-    bool isOutermostCodeBlock = true;
-    std::ostringstream mainCode;
-    std::ostream *currentOutputStream;
+    std::shared_ptr<std::ostream> dumpStream;
     std::ostream &os()
     {
-        return *currentOutputStream;
+        return *dumpStream;
     }
     struct Indenter
     {
@@ -35,13 +26,10 @@ private:
         }
     };
     Indenter indent;
-    bool didIndent = false;
-    bool isDeclaration = false, isInitialization = false;
-    std::string declarationTypeAfterVariable;
-    bool canSkipSemicolon = false;
+    void dumpExpression(std::shared_ptr<const AST::Expression> node, std::string nodeName);
 public:
-    CodeWriterC(std::shared_ptr<std::ostream> sourceStream)
-        : sourceStream(sourceStream), currentOutputStream(sourceStream.get())
+    CodeWriterDump(std::shared_ptr<std::ostream> dumpStream)
+        : dumpStream(dumpStream)
     {
     }
     virtual void visitAndExpression(std::shared_ptr<const AST::AndExpression> node) override;
@@ -80,4 +68,4 @@ public:
     virtual void finish() override;
 };
 
-#endif // CODE_WRITER_C_H_INCLUDED
+#endif // CODE_WRITER_DUMP_H_INCLUDED

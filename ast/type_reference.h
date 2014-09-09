@@ -51,6 +51,8 @@ public:
     }
     virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override
     {
+        if(destType->isLValue())
+            return *type == *destType->toRValue();
         return type->canCastTo(destType->toRValue(), isImplicitCast);
     }
     virtual bool operator ==(const Type &rt) const override

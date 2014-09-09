@@ -39,7 +39,24 @@ void CodeWriterC::visitAutoVariable(shared_ptr<const AST::AutoVariable> node)
             os() << indent;
         didIndent = true;
         node->type()->toRValue()->writeCode(*this);
-        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable << ";\n";
+        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        didIndent = false;
+    }
+    else if(isInitialization)
+    {
+        declarationTypeAfterVariable = "";
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        if(node->initializer() != nullptr)
+        {
+            os() << string_cast<string>(createVariableName(node->name()));
+            os() << " = (";
+            isInitialization = false;
+            node->initializer()->writeCode(*this);
+            isInitialization = true;
+            os() << ")";
+        }
         didIndent = false;
     }
     else
@@ -99,6 +116,8 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         case AST::Symbol::Type::StaticVariable:
             isDeclaration = true;
             symbol.value->writeCode(*this);
+            os() << ";\n";
+            didIndent = false;
             isDeclaration = false;
             break;
         default:
@@ -114,7 +133,16 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
     for(shared_ptr<AST::Statement> statement : node->statements)
     {
         canSkipSemicolon = false;
-        statement->writeCode(*this);
+        if(dynamic_cast<const AST::Variable *>(statement.get()) != nullptr)
+        {
+            isInitialization = true;
+            statement->writeCode(*this);
+            isInitialization = false;
+        }
+        else
+        {
+            statement->writeCode(*this);
+        }
         if(!canSkipSemicolon)
         {
             os() << ";\n";
@@ -140,6 +168,42 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         didIndent = false;
     }
     canSkipSemicolon = true;
+}
+
+void CodeWriterC::visitCompareExpression(shared_ptr<const AST::CompareExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "", op;
+    switch(node->ctype())
+    {
+    case AST::CompareExpression::CType::Eq:
+        op = "==";
+        break;
+    case AST::CompareExpression::CType::NE:
+        op = "!=";
+        break;
+    case AST::CompareExpression::CType::GT:
+        op = ">";
+        break;
+    case AST::CompareExpression::CType::LT:
+        op = "<";
+        break;
+    case AST::CompareExpression::CType::GE:
+        op = ">=";
+        break;
+    case AST::CompareExpression::CType::LE:
+        op = "<=";
+        break;
+    }
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " " + op + " ";
+        e->writeCode(*this);
+        os() << ")";
+    }
 }
 
 void CodeWriterC::visitDoStatement(shared_ptr<const AST::DoStatement> node)
@@ -273,6 +337,39 @@ void CodeWriterC::visitOrExpression(shared_ptr<const AST::OrExpression> node)
 
 void CodeWriterC::visitReferenceVariable(shared_ptr<const AST::ReferenceVariable> node)
 {
+    if(isDeclaration)
+    {
+        declarationTypeAfterVariable = "";
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        node->type()->writeCode(*this);
+        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        didIndent = false;
+    }
+    else if(isInitialization)
+    {
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        if(node->initializer() != nullptr)
+        {
+            os() << string_cast<string>(createVariableName(node->name()));
+            os() << " = (";
+            isInitialization = false;
+            node->initializer()->writeCode(*this);
+            isInitialization = true;
+            os() << ")";
+        }
+        didIndent = false;
+    }
+    else
+    {
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << string_cast<string>(createVariableName(node->name()));
+    }
 }
 
 void CodeWriterC::visitSingleLiteralExpression(shared_ptr<const AST::SingleLiteralExpression> node)
@@ -288,6 +385,32 @@ void CodeWriterC::visitSingleLiteralExpression(shared_ptr<const AST::SingleLiter
 
 void CodeWriterC::visitStaticVariable(shared_ptr<const AST::StaticVariable> node)
 {
+    if(isDeclaration)
+    {
+        declarationTypeAfterVariable = "";
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << "static ";
+        node->type()->toRValue()->writeCode(*this);
+        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        if(node->initializer() != nullptr)
+        {
+            os() << " = (";
+            isDeclaration = false;
+            node->initializer()->writeCode(*this);
+            isDeclaration = true;
+            os() << ")";
+        }
+        didIndent = false;
+    }
+    else
+    {
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << "&" << string_cast<string>(createVariableName(node->name()));
+    }
 }
 
 void CodeWriterC::visitStringLiteralExpression(shared_ptr<const AST::StringLiteralExpression> node)
@@ -345,7 +468,7 @@ void CodeWriterC::visitStringLiteralExpression(shared_ptr<const AST::StringLiter
                 ostringstream ss;
                 ss.fill('0');
                 ss.width(8);
-                ss << hex << value;
+                ss << hex << uppercase << value;
                 os() << "\\U" << ss.str();
             }
             if(value > 0xFF)
@@ -353,7 +476,7 @@ void CodeWriterC::visitStringLiteralExpression(shared_ptr<const AST::StringLiter
                 ostringstream ss;
                 ss.fill('0');
                 ss.width(4);
-                ss << hex << value;
+                ss << hex << uppercase << value;
                 os() << "\\u" << ss.str();
             }
             else if(value < 0x20 || value > 0x7E)
@@ -361,7 +484,7 @@ void CodeWriterC::visitStringLiteralExpression(shared_ptr<const AST::StringLiter
                 ostringstream ss;
                 ss.fill('0');
                 ss.width(2);
-                ss << hex << value;
+                ss << hex << uppercase << value;
                 os() << "\\x" << ss.str();
             }
             else

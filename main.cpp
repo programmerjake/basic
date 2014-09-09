@@ -4,6 +4,7 @@
 #include "basic.parser.h"
 #include "string_cast.h"
 #include "code_writer_c.h"
+#include "code_writer_dump.h"
 
 using namespace std;
 
@@ -100,28 +101,46 @@ struct MemoryInputStream : public FileInputStream
 string getInput()
 {
     return string(R"a(
-Dim a As Integer = 23, b As Single, c As Boolean = True
-Do While c Or False
-    If True And Not c Then
-        Cast(TypeOf(1), 1.5)
-    ElseIf c Then
-        Cast(ByRef TypeOf(a), a)
-        b = CSng(a)
-    Else
-        While True
-            "abc""⌀"
-        WEnd
-    End If
-Loop
+Dim a As Integer
+Dim b As ByRef Integer = a
+Dim c As Single
+c = b
 )a").substr(1);
 }
 
-int main()
+void dumpCode(shared_ptr<AST::Base> code)
 {
+    CodeWriterDump cw(shared_ptr<ostream>(&cout, [](ostream *){}));
+    code->writeCode(cw);
+    cw.finish();
+}
+
+int main(int argc, char **argv)
+{
+    wstring fileName = L"";
+    if(argc > 1)
+        fileName = string_cast<wstring>(argv[1]);
+    if(fileName == L"-h" || fileName == L"--help" || fileName == L"-?")
+    {
+        cout << "Usage: basic [<inputfile.bas>]\n";
+        return 0;
+    }
     try
     {
-        shared_ptr<AST::CodeBlock> code = parseAll(make_shared<MemoryInputStream>(getInput()));
-        shared_ptr<CodeWriter> cw = make_shared<CodeWriterC>(shared_ptr<ostream>(&cout, [](ostream *){}));
+        shared_ptr<InputStream> is;
+        if(fileName != L"")
+            is = make_shared<FileInputStream>(fileName);
+        else
+            is = make_shared<FileInputStream>();
+        shared_ptr<AST::CodeBlock> code = parseAll(is);
+        is = nullptr;
+        shared_ptr<CodeWriter> cw;
+#if 0
+        cw = make_shared<CodeWriterDump>(shared_ptr<ostream>(&cout, [](ostream *){}));
+        code->writeCode(*cw);
+        cw->finish();
+#endif
+        cw = make_shared<CodeWriterC>(shared_ptr<ostream>(&cout, [](ostream *){}));
         code->writeCode(*cw);
         cw->finish();
     }

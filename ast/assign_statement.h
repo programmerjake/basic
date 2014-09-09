@@ -22,7 +22,7 @@ private:
     {
         if(!lhs->type()->isLValue())
             throw ParserError(location, L"can not assign to a rvalue");
-        rhs = CastExpression::castImplicit(rhs, lhs->type()->toRValue());
+        this->rhs = CastExpression::castImplicit(rhs, lhs->type()->toRValue());
     }
 public:
     static std::shared_ptr<AssignStatement> make(Location location, std::shared_ptr<Expression> lhs, std::shared_ptr<Expression> rhs)

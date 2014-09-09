@@ -81,6 +81,18 @@ void NotExpression::calcType()
     type(calcTypeHLogicOps(argsRef(), L"Not", false));
 }
 
+void CompareExpression::checkTypes()
+{
+    auto t = calcTypeH(argsRef(), getOperatorString(ctype()));
+    if(t->getAbsoluteBaseType() == TypeBoolean::getInstance() && !isOrdered(ctype()))
+        return;
+    if(t->isNumericType())
+        return;
+    if(t->getAbsoluteBaseType() == TypeString::getInstance())
+        return;
+    throw ParserError(location(), L"invalid argument types for " + getOperatorString(ctype()));
+}
+
 namespace
 {
 int IntegerLiteralMakeOnErrorHelper(function<void(Location location, const std::wstring &)> errorHandler, Location location, const std::wstring &msg)
@@ -185,7 +197,7 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(Location loc
             if(retval > maxBeforeMultiplying)
                 return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
             retval *= 10;
-            if(retval >= -(uint64_t)digit)
+            if(retval >= -(uint64_t)digit && digit > 0)
                 return make(location, IntegerLiteralMakeOnErrorHelper(errorHandler, location, L"number too big"));
             retval += digit;
         }
@@ -325,5 +337,10 @@ void StaticVariable::writeCode(CodeWriter &cw) const
 void XorExpression::writeCode(CodeWriter &cw) const
 {
     cw.visitXorExpression(static_pointer_cast<const XorExpression>(shared_from_this()));
+}
+
+void CompareExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitCompareExpression(static_pointer_cast<const CompareExpression>(shared_from_this()));
 }
 }

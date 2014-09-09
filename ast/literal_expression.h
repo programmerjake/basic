@@ -199,7 +199,7 @@ public:
         }
         if(shouldDisplayAsHex())
         {
-            ss << std::hex << L"&H";
+            ss << std::hex << std::uppercase << L"&H";
         }
         ss << value;
         if(type() != calcType(value, isSigned))
@@ -237,7 +237,7 @@ public:
         }
         if(shouldDisplayAsHex())
         {
-            ss << std::hex << L"0x";
+            ss << std::hex << std::uppercase << L"0x";
         }
         ss << value;
         if(type() == TypeInteger::getInstance())

@@ -20,5 +20,6 @@
 #include "ast/variable.h"
 #include "ast/assign_statement.h"
 #include "ast/not_expression.h"
+#include "ast/compare_expression.h"
 
 #endif // ALL_H_INCLUDED

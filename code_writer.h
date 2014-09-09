@@ -21,6 +21,7 @@ public:
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) = 0;
     virtual void visitCastExpression(std::shared_ptr<const AST::CastExpression> node) = 0;
     virtual void visitCodeBlock(std::shared_ptr<const AST::CodeBlock> node) = 0;
+    virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) = 0;
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) = 0;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) = 0;
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) = 0;

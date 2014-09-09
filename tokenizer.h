@@ -158,11 +158,12 @@ public:
         int peekChar = svalue[stringIndex++];
         auto getChar = [&]()->int
         {
+            int retval = peekChar;
             if(stringIndex >= svalue.size())
                 peekChar = EOF;
             else
                 peekChar = svalue[stringIndex++];
-            return peekChar;
+            return retval;
         };
         double retval = 0;
         if(peekChar == '&')

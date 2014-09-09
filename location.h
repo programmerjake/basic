@@ -3,6 +3,7 @@
 
 #include <cwchar>
 #include <string>
+#include <sstream>
 
 struct Location final
 {
@@ -15,6 +16,12 @@ struct Location final
     Location(size_t line, size_t col, std::wstring fileName)
         : line(line), col(col), fileName(fileName)
     {
+    }
+    explicit operator std::wstring() const
+    {
+        std::wostringstream ss;
+        ss << fileName << L":" << line << L":" << col;
+        return ss.str();
     }
 };
 

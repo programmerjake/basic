@@ -60,6 +60,10 @@ public:
     {
         return L"Double";
     }
+    virtual bool isNumericType() const override
+    {
+        return true;
+    }
     virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool operator ==(const Type &rt) const override
     {
@@ -273,6 +277,10 @@ public:
     virtual std::wstring toString() const override
     {
         return L"Single";
+    }
+    virtual bool isNumericType() const override
+    {
+        return true;
     }
     virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override;
     virtual bool operator ==(const Type &rt) const override

@@ -257,7 +257,7 @@ declarationPart: Id '=' expression
         else
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name);
+            variable = AST::AutoVariable::make(location, type, name, rhs);
             stype = AST::Symbol::Type::AutoVariable;
         }
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
@@ -265,7 +265,7 @@ declarationPart: Id '=' expression
         if(sts.back()->exists(name))
             ::handleError(location, name + L" already defined");
         sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable, AST::AssignStatement::make($2.token.location, variable, rhs)});
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
     }
     | Id As type
     {
@@ -276,12 +276,12 @@ declarationPart: Id '=' expression
         AST::Symbol::Type stype;
         if(type->isLValue())
         {
-            handleErrorNotImplemented(location, L"ByRef variable");
+            ::handleError(location, L"ByRef variable must have initializer");
         }
         else
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name);
+            variable = AST::AutoVariable::make(location, type, name, nullptr);
             stype = AST::Symbol::Type::AutoVariable;
         }
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
@@ -300,12 +300,14 @@ declarationPart: Id '=' expression
         AST::Symbol::Type stype;
         if(type->isLValue())
         {
-            handleErrorNotImplemented(location, L"ByRef variable");
+            type = AST::TypeReference::make(location, type);
+            variable = AST::ReferenceVariable::make(location, type, name, dynamic_pointer_cast<AST::Expression>($5.node));
+            stype = AST::Symbol::Type::ReferenceVariable;
         }
         else
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name);
+            variable = AST::AutoVariable::make(location, type, name, dynamic_pointer_cast<AST::Expression>($5.node));
             stype = AST::Symbol::Type::AutoVariable;
         }
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
@@ -313,7 +315,7 @@ declarationPart: Id '=' expression
         if(sts.back()->exists(name))
             ::handleError(location, name + L" already defined");
         sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable, AST::AssignStatement::make($2.token.location, variable, dynamic_pointer_cast<AST::Expression>($5.node))});
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
     }
     ;
 
@@ -480,20 +482,53 @@ not_expression_no_equals: compare_expression_no_equals {$$ = $1;}
     ;
 
 compare_expression: add_expression {$$ = $1;}
-    | compare_expression '<' add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression '>' add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression LogicalLE add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression LogicalGE add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression '=' add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression LogicalNE add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression '<' add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::LT, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression '>' add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::GT, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression LogicalLE add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::LE, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression LogicalGE add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::GE, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression '=' add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::Eq, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression LogicalNE add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::NE, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
     ;
 
 compare_expression_no_equals: add_expression {$$ = $1;}
-    | compare_expression_no_equals '<' add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression_no_equals '>' add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression_no_equals LogicalLE add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression_no_equals LogicalGE add_expression {handleErrorNotImplemented($2.token);}
-    | compare_expression_no_equals LogicalNE add_expression {handleErrorNotImplemented($2.token);}
+    | compare_expression_no_equals '<' add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::LT, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression_no_equals '>' add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::GT, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression_no_equals LogicalLE add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::LE, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression_no_equals LogicalGE add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::GE, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
+    | compare_expression_no_equals LogicalNE add_expression
+    {
+        $$ = ParserValueType(AST::CompareExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), AST::CompareExpression::CType::NE, dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
     ;
 
 add_expression: mod_expression {$$ = $1;}
@@ -517,7 +552,7 @@ neg_expression: toplevel_expression {$$ = $1;}
     ;
 
 toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpression::make($1.token.location, $1.token.svalue));}
-    | IntegerLiteral {$$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue));}
+    | IntegerLiteral {$$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue, ::handleError));}
     | SingleLiteral {$$ = ParserValueType(AST::SingleLiteralExpression::make($1.token.location, $1.token.getFloatingPointLiteralValue()));}
     | DoubleLiteral {$$ = ParserValueType(AST::DoubleLiteralExpression::make($1.token.location, $1.token.getFloatingPointLiteralValue()));}
     | True {$$ = ParserValueType(AST::BooleanLiteralExpression::make($1.token.location, true));}

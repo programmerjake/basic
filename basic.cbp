@@ -11,6 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="test.bas" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -39,6 +40,7 @@
 		<Unit filename="ast/base.h" />
 		<Unit filename="ast/cast_expression.h" />
 		<Unit filename="ast/code_block.h" />
+		<Unit filename="ast/compare_expression.h" />
 		<Unit filename="ast/do_statement.h" />
 		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/expressions.cpp" />
@@ -65,12 +67,17 @@
 		<Unit filename="code_writer.h" />
 		<Unit filename="code_writer_c.cpp" />
 		<Unit filename="code_writer_c.h" />
+		<Unit filename="code_writer_dump.cpp" />
+		<Unit filename="code_writer_dump.h" />
 		<Unit filename="error.h" />
 		<Unit filename="location.h" />
 		<Unit filename="main.cpp">
 			<Option weight="70" />
 		</Unit>
 		<Unit filename="string_cast.h" />
+		<Unit filename="test.bas">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="tokenizer.h" />
 		<Extensions>
 			<code_completion />
