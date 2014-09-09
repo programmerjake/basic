@@ -29,5 +29,6 @@
 #include "ast/neg_expression.h"
 #include "ast/sub_expression.h"
 #include "ast/unary_plus_expression.h"
+#include "ast/builtin_function.h"
 
 #endif // ALL_H_INCLUDED

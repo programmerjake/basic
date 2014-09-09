@@ -66,6 +66,11 @@ void CodeWriterDump::visitBooleanLiteralExpression(shared_ptr<const AST::Boolean
     os() << indent << "BooleanLiteral: " << string_cast<string>(node->toSourceString()) << "\n";
 }
 
+void CodeWriterDump::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFunctionExpression> node)
+{
+    dumpExpression(node, string_cast<string>(L"BuiltInFunction(" + AST::BuiltInFunctionExpression::fnName(node->fnType()) + L")"));
+}
+
 void CodeWriterDump::visitCastExpression(shared_ptr<const AST::CastExpression> node)
 {
     dumpExpression(node, "Cast");

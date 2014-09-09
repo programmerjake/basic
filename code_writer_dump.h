@@ -37,6 +37,7 @@ public:
     virtual void visitAssignStatement(std::shared_ptr<const AST::AssignStatement> node) override;
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) override;
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) override;
+    virtual void visitBuiltInFunctionExpression(std::shared_ptr<const AST::BuiltInFunctionExpression> node) override;
     virtual void visitCastExpression(std::shared_ptr<const AST::CastExpression> node) override;
     virtual void visitCodeBlock(std::shared_ptr<const AST::CodeBlock> node) override;
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) override;

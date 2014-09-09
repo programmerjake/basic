@@ -561,6 +561,7 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Abs '(' expression ')' {handleErrorNotImplemented($1.token);}
     | Asc '(' expression ')' {handleErrorNotImplemented($1.token);}
     | ATn '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | ATn '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
     | Chr '(' expression ')' {handleErrorNotImplemented($1.token);}
     | Cos '(' expression ')' {handleErrorNotImplemented($1.token);}
     | CBool '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeBoolean::getInstance(), false));}
@@ -596,6 +597,7 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Sgn '(' expression ')' {handleErrorNotImplemented($1.token);}
     | Sin '(' expression ')' {handleErrorNotImplemented($1.token);}
     | Space '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Sqr '(' expression ')' {handleErrorNotImplemented($1.token);}
     | String '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
     | Tan '(' expression ')' {handleErrorNotImplemented($1.token);}
     | UBound '(' expression ')' {handleErrorNotImplemented($1.token);}
