@@ -1,6 +1,7 @@
 Dim a As Integer = 100
 a = 23 + 45
 Dim b As ByRef Integer = a, c As ByRef Integer = a
+Dim d As String
 If b = 100000 Then
     b = CInt(45.4)
     1.2 / 3
@@ -19,4 +20,5 @@ If b = 100000 Then
     23.4 - 5
     a - -2
     a - +b
+    d = "abc" + "123"
 End If

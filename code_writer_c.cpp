@@ -98,63 +98,63 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
 {
     switch(node->fnType())
     {
-    case FnType::Abs:
+    case AST::BuiltInFunctionExpression::FnType::Abs:
         throw logic_error("Abs not implemented");
-    case FnType::Asc:
+    case AST::BuiltInFunctionExpression::FnType::Asc:
         throw logic_error("Asc not implemented");
-    case FnType::ATn1:
+    case AST::BuiltInFunctionExpression::FnType::ATn1:
         throw logic_error("ATn not implemented");
-    case FnType::ATn2:
+    case AST::BuiltInFunctionExpression::FnType::ATn2:
         throw logic_error("ATn not implemented");
-    case FnType::Chr:
+    case AST::BuiltInFunctionExpression::FnType::Chr:
         throw logic_error("Chr not implemented");
-    case FnType::Cos:
+    case AST::BuiltInFunctionExpression::FnType::Cos:
         throw logic_error("Cos not implemented");
-    case FnType::Exp:
+    case AST::BuiltInFunctionExpression::FnType::Exp:
         throw logic_error("Exp not implemented");
-    case FnType::Hex:
+    case AST::BuiltInFunctionExpression::FnType::Hex:
         throw logic_error("Hex not implemented");
-    case FnType::InStr2:
+    case AST::BuiltInFunctionExpression::FnType::InStr2:
         throw logic_error("InStr not implemented");
-    case FnType::InStr3:
+    case AST::BuiltInFunctionExpression::FnType::InStr3:
         throw logic_error("InStr not implemented");
-    case FnType::LBound1:
+    case AST::BuiltInFunctionExpression::FnType::LBound1:
         throw logic_error("LBound not implemented");
-    case FnType::LBound2:
+    case AST::BuiltInFunctionExpression::FnType::LBound2:
         throw logic_error("LBound not implemented");
-    case FnType::LCase:
+    case AST::BuiltInFunctionExpression::FnType::LCase:
         throw logic_error("LCase not implemented");
-    case FnType::Left:
+    case AST::BuiltInFunctionExpression::FnType::Left:
         throw logic_error("Left not implemented");
-    case FnType::Mid2:
+    case AST::BuiltInFunctionExpression::FnType::Mid2:
         throw logic_error("Mid not implemented");
-    case FnType::Mid3:
+    case AST::BuiltInFunctionExpression::FnType::Mid3:
         throw logic_error("Mid not implemented");
-    case FnType::Oct:
+    case AST::BuiltInFunctionExpression::FnType::Oct:
         throw logic_error("Oct not implemented");
-    case FnType::Right:
+    case AST::BuiltInFunctionExpression::FnType::Right:
         throw logic_error("Right not implemented");
-    case FnType::RTrim:
+    case AST::BuiltInFunctionExpression::FnType::RTrim:
         throw logic_error("RTrim not implemented");
-    case FnType::Sgn:
+    case AST::BuiltInFunctionExpression::FnType::Sgn:
         throw logic_error("Sgn not implemented");
-    case FnType::Sin:
+    case AST::BuiltInFunctionExpression::FnType::Sin:
         throw logic_error("Sin not implemented");
-    case FnType::Space:
+    case AST::BuiltInFunctionExpression::FnType::Space:
         throw logic_error("Space not implemented");
-    case FnType::Sqr:
+    case AST::BuiltInFunctionExpression::FnType::Sqr:
         throw logic_error("Sqr not implemented");
-    case FnType::String:
+    case AST::BuiltInFunctionExpression::FnType::String:
         throw logic_error("String not implemented");
-    case FnType::Tan:
+    case AST::BuiltInFunctionExpression::FnType::Tan:
         throw logic_error("Tan not implemented");
-    case FnType::UBound1:
+    case AST::BuiltInFunctionExpression::FnType::UBound1:
         throw logic_error("UBound not implemented");
-    case FnType::UBound2:
+    case AST::BuiltInFunctionExpression::FnType::UBound2:
         throw logic_error("UBound not implemented");
-    case FnType::UCase:
+    case AST::BuiltInFunctionExpression::FnType::UCase:
         throw logic_error("UCase not implemented");
-    case FnType::Val:
+    case AST::BuiltInFunctionExpression::FnType::Val:
         throw logic_error("Val not implemented");
     }
     assert(false);
@@ -180,7 +180,18 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
 {
     bool isOutermostCodeBlock = this->isOutermostCodeBlock;
     this->isOutermostCodeBlock = false;
-    if(!isOutermostCodeBlock)
+    if(isOutermostCodeBlock)
+    {
+        indent.depth = 0;
+        os() << indent << "#include <cwchar>\n";
+        os() << indent << "#include <cmath>\n";
+        os() << indent << "#include <string>\n";
+        os() << indent << "#include <cstdint>\n";
+        os() << indent << "\n";
+        os() << indent << "using namespace std;\n";
+        os() << indent << "\n";
+    }
+    else
     {
         if(!didIndent)
             os() << indent;
@@ -234,13 +245,6 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
     {
         currentOutputStream = sourceStream.get();
         indent.depth = 0;
-        os() << indent << "#include <cwchar>\n";
-        os() << indent << "#include <cmath>\n";
-        os() << indent << "#include <string>\n";
-        os() << indent << "#include <cstdint>\n";
-        os() << indent << "\n";
-        os() << indent << "using namespace std;\n";
-        os() << indent << "\n";
         os() << indent << "int main()\n";
         os() << indent << "{\n";
         indent.depth++;
@@ -256,6 +260,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         didIndent = false;
     }
     canSkipSemicolon = true;
+    this->isOutermostCodeBlock = isOutermostCodeBlock;
 }
 
 void CodeWriterC::visitCompareExpression(shared_ptr<const AST::CompareExpression> node)

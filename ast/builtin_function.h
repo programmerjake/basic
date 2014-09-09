@@ -114,7 +114,7 @@ public:
         assert(false);
         return 0;
     }
-    static wstring fnName(FnType fnType)
+    static std::wstring fnName(FnType fnType)
     {
         switch(fnType)
         {
@@ -164,8 +164,6 @@ public:
             return L"Space";
         case FnType::Sqr:
             return L"Sqr";
-        case FnType::Space:
-            return L"Space";
         case FnType::String:
             return L"String";
         case FnType::Tan:
@@ -182,7 +180,7 @@ public:
         assert(false);
         return L"";
     }
-    static wstring fnSourceName(FnType fnType)
+    static std::wstring fnSourceName(FnType fnType)
     {
         switch(fnType)
         {
