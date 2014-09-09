@@ -1,5 +1,7 @@
 #include "ast/type_builtin.h"
+#include "ast/type_reference.h"
 #include <cassert>
+#include "code_writer.h"
 
 using namespace std;
 
@@ -154,6 +156,11 @@ bool TypeBoolean::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast
     return false;
 }
 
+void TypeBoolean::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeBoolean(static_pointer_cast<const TypeBoolean>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeBoolean::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -188,6 +195,11 @@ bool TypeDouble::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast)
     if(destType == TypeUInt64::getInstance())
         return !isImplicitCast;
     return false;
+}
+
+void TypeDouble::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeDouble(static_pointer_cast<const TypeDouble>(shared_from_this()));
 }
 
 shared_ptr<const Type> TypeDouble::getCommonType(shared_ptr<const Type> rt) const
@@ -226,6 +238,11 @@ bool TypeInteger::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast
     return false;
 }
 
+void TypeInteger::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeInteger(static_pointer_cast<const TypeInteger>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeInteger::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -260,6 +277,11 @@ bool TypeInt8::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) c
     if(destType == TypeUInt64::getInstance())
         return !isImplicitCast;
     return false;
+}
+
+void TypeInt8::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeInt8(static_pointer_cast<const TypeInt8>(shared_from_this()));
 }
 
 shared_ptr<const Type> TypeInt8::getCommonType(shared_ptr<const Type> rt) const
@@ -298,6 +320,11 @@ bool TypeInt16::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) 
     return false;
 }
 
+void TypeInt16::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeInt16(static_pointer_cast<const TypeInt16>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeInt16::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -332,6 +359,11 @@ bool TypeInt32::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) 
     if(destType == TypeUInt64::getInstance())
         return !isImplicitCast;
     return false;
+}
+
+void TypeInt32::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeInt32(static_pointer_cast<const TypeInt32>(shared_from_this()));
 }
 
 shared_ptr<const Type> TypeInt32::getCommonType(shared_ptr<const Type> rt) const
@@ -370,6 +402,11 @@ bool TypeInt64::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) 
     return false;
 }
 
+void TypeInt64::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeInt64(static_pointer_cast<const TypeInt64>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeInt64::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -406,6 +443,11 @@ bool TypeSingle::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast)
     return false;
 }
 
+void TypeSingle::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeSingle(static_pointer_cast<const TypeSingle>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeSingle::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -420,6 +462,11 @@ bool TypeString::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast)
     if(destType.get() == this)
         return true;
     return false;
+}
+
+void TypeString::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeString(static_pointer_cast<const TypeString>(shared_from_this()));
 }
 
 shared_ptr<const Type> TypeString::getCommonType(shared_ptr<const Type> rt) const
@@ -458,6 +505,11 @@ bool TypeUInt8::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast) 
     return false;
 }
 
+void TypeUInt8::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeUInt8(static_pointer_cast<const TypeUInt8>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeUInt8::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -492,6 +544,11 @@ bool TypeUInt16::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast)
     if(destType == TypeUInt64::getInstance())
         return true;
     return false;
+}
+
+void TypeUInt16::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeUInt16(static_pointer_cast<const TypeUInt16>(shared_from_this()));
 }
 
 shared_ptr<const Type> TypeUInt16::getCommonType(shared_ptr<const Type> rt) const
@@ -530,6 +587,11 @@ bool TypeUInt32::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast)
     return false;
 }
 
+void TypeUInt32::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeUInt32(static_pointer_cast<const TypeUInt32>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeUInt32::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
@@ -566,9 +628,18 @@ bool TypeUInt64::canCastTo(shared_ptr<const Type> destType, bool isImplicitCast)
     return false;
 }
 
+void TypeUInt64::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeUInt64(static_pointer_cast<const TypeUInt64>(shared_from_this()));
+}
+
 shared_ptr<const Type> TypeUInt64::getCommonType(shared_ptr<const Type> rt) const
 {
     return getCommonTypeH(static_pointer_cast<const Type>(shared_from_this()), rt);
 }
 
+void TypeReference::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeReference(static_pointer_cast<const TypeReference>(shared_from_this()));
+}
 }

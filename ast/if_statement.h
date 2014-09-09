@@ -26,6 +26,7 @@ public:
         return std::shared_ptr<IfStatement>(new IfStatement(location, ifSections, elseSection));
     }
     void checkTypes();
+    virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
 };
 }
 

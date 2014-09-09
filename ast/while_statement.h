@@ -25,6 +25,7 @@ public:
     {
         return std::shared_ptr<WhileStatement>(new WhileStatement(location, condition, body));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
 };
 }
 

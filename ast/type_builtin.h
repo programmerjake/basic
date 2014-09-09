@@ -35,6 +35,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeDouble final : public Type
@@ -65,6 +66,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 /** 32 or 64 bits depending on target architecture
@@ -102,6 +104,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeInt8 final : public Type
@@ -137,6 +140,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeInt16 final : public Type
@@ -172,6 +176,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeInt32 final : public Type
@@ -207,6 +212,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeInt64 final : public Type
@@ -242,6 +248,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeSingle final : public Type
@@ -273,6 +280,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeString final : public Type
@@ -304,6 +312,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeUInt8 final : public Type
@@ -339,6 +348,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeUInt16 final : public Type
@@ -374,6 +384,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeUInt32 final : public Type
@@ -409,6 +420,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 class TypeUInt64 final : public Type
@@ -444,6 +456,7 @@ public:
         return this == &rt;
     }
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override;
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
 }

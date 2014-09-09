@@ -40,6 +40,7 @@ public:
     {
         return std::shared_ptr<ReferenceVariable>(new ReferenceVariable(location, type, name));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 
 class AutoVariable final : public Variable
@@ -54,6 +55,7 @@ public:
     {
         return std::shared_ptr<AutoVariable>(new AutoVariable(location, type, name));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 
 class StaticVariable final : public Variable
@@ -68,6 +70,7 @@ public:
     {
         return std::shared_ptr<StaticVariable>(new StaticVariable(location, type, name));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 }
 

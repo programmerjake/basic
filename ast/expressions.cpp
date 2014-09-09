@@ -5,7 +5,9 @@
 #include "ast/xor_expression.h"
 #include "ast/cast_expression.h"
 #include "ast/literal_expression.h"
+#include "ast/not_expression.h"
 #include "error.h"
+#include "code_writer.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -21,21 +23,21 @@ namespace AST
 {
 namespace
 {
-shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, const wstring &opName)
+shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, const wstring &opName, bool plural = true)
 {
     vector<shared_ptr<const Type>> types;
     types.reserve(args.size());
 
     for(const shared_ptr<Expression> &e : args)
     {
-        types.push_back(e->type());
+        types.push_back(e->type()->toRValue());
     }
 
     shared_ptr<const Type> type = Type::getCommonType(types);
 
     if(type == nullptr)
     {
-        throw ParserError(args[0]->location(), L"invalid argument types for " + opName);
+        throw ParserError(args[0]->location(), L"invalid argument type" + static_cast<wstring>(plural ? L"s" : L"") + L" for " + opName);
     }
 
     for(shared_ptr<Expression> &e : args)
@@ -46,13 +48,13 @@ shared_ptr<const Type> calcTypeH(vector<shared_ptr<Expression>> &args, const wst
     return type;
 }
 
-shared_ptr<const Type> calcTypeHLogicOps(vector<shared_ptr<Expression>> &args, const wstring &opName)
+shared_ptr<const Type> calcTypeHLogicOps(vector<shared_ptr<Expression>> &args, const wstring &opName, bool plural = true)
 {
-    shared_ptr<const Type> type = calcTypeH(args, opName);
+    shared_ptr<const Type> type = calcTypeH(args, opName, plural);
 
     if(type->getAbsoluteBaseType() != TypeBoolean::getInstance() && !type->isIntegralType())
     {
-        throw ParserError(args[0]->location(), L"invalid argument types for " + opName);
+        throw ParserError(args[0]->location(), L"invalid argument type" + static_cast<wstring>(plural ? L"s" : L"") + L" for " + opName);
     }
 
     return type;
@@ -72,6 +74,11 @@ void AndExpression::calcType()
 void XorExpression::calcType()
 {
     type(calcTypeHLogicOps(argsRef(), L"Xor"));
+}
+
+void NotExpression::calcType()
+{
+    type(calcTypeHLogicOps(argsRef(), L"Not", false));
 }
 
 namespace
@@ -253,5 +260,70 @@ shared_ptr<IntegerLiteralExpression> IntegerLiteralExpression::make(Location loc
     if(isNegative)
         retval = -retval;
     return make(location, retval);
+}
+
+void AndExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitAndExpression(static_pointer_cast<const AndExpression>(shared_from_this()));
+}
+
+void CastExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitCastExpression(static_pointer_cast<const CastExpression>(shared_from_this()));
+}
+
+void BooleanLiteralExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitBooleanLiteralExpression(static_pointer_cast<const BooleanLiteralExpression>(shared_from_this()));
+}
+
+void DoubleLiteralExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitDoubleLiteralExpression(static_pointer_cast<const DoubleLiteralExpression>(shared_from_this()));
+}
+
+void SingleLiteralExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitSingleLiteralExpression(static_pointer_cast<const SingleLiteralExpression>(shared_from_this()));
+}
+
+void StringLiteralExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitStringLiteralExpression(static_pointer_cast<const StringLiteralExpression>(shared_from_this()));
+}
+
+void IntegerLiteralExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitIntegerLiteralExpression(static_pointer_cast<const IntegerLiteralExpression>(shared_from_this()));
+}
+
+void NotExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitNotExpression(static_pointer_cast<const NotExpression>(shared_from_this()));
+}
+
+void OrExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitOrExpression(static_pointer_cast<const OrExpression>(shared_from_this()));
+}
+
+void AutoVariable::writeCode(CodeWriter &cw) const
+{
+    cw.visitAutoVariable(static_pointer_cast<const AutoVariable>(shared_from_this()));
+}
+
+void ReferenceVariable::writeCode(CodeWriter &cw) const
+{
+    cw.visitReferenceVariable(static_pointer_cast<const ReferenceVariable>(shared_from_this()));
+}
+
+void StaticVariable::writeCode(CodeWriter &cw) const
+{
+    cw.visitStaticVariable(static_pointer_cast<const StaticVariable>(shared_from_this()));
+}
+
+void XorExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitXorExpression(static_pointer_cast<const XorExpression>(shared_from_this()));
 }
 }

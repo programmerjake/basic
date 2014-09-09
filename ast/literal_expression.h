@@ -44,6 +44,7 @@ public:
             return L"True";
         return L"False";
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 
 class DoubleLiteralExpression : public LiteralExpression
@@ -65,6 +66,7 @@ public:
         ss << value;
         return ss.str();
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 
 class SingleLiteralExpression : public LiteralExpression
@@ -86,6 +88,7 @@ public:
         ss << value << L"!";
         return ss.str();
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 
 class StringLiteralExpression : public LiteralExpression
@@ -118,6 +121,7 @@ public:
         retval += L"\"";
         return retval;
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 
 class IntegerLiteralExpression : public LiteralExpression
@@ -222,6 +226,41 @@ public:
         }
         return ss.str();
     }
+    std::wstring toCString() const
+    {
+        std::wostringstream ss;
+        uint64_t value = this->value;
+        if(isSigned && this->value < 0)
+        {
+            ss << L"-";
+            value = -value;
+        }
+        if(shouldDisplayAsHex())
+        {
+            ss << std::hex << L"0x";
+        }
+        ss << value;
+        if(type() == TypeInteger::getInstance())
+            return ss.str() + L"L";
+        else if(type() == TypeInt8::getInstance())
+            return L"(int8_t)" + ss.str();
+        else if(type() == TypeInt16::getInstance())
+            return L"(int16_t)" + ss.str();
+        else if(type() == TypeInt32::getInstance())
+            return L"(int32_t)" + ss.str();
+        else if(type() == TypeInt64::getInstance())
+            return L"(int64_t)" + ss.str() + L"LL";
+        else if(type() == TypeUInt8::getInstance())
+            return L"(uint8_t)" + ss.str() + L"U";
+        else if(type() == TypeUInt16::getInstance())
+            return L"(uint16_t)" + ss.str() + L"U";
+        else if(type() == TypeUInt32::getInstance())
+            return L"(uint32_t)" + ss.str() + L"U";
+        else if(type() == TypeUInt64::getInstance())
+            return L"(uint64_t)" + ss.str() + L"ULL";
+        return ss.str();
+    }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 }
 

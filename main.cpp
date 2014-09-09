@@ -3,6 +3,7 @@
 #include <sstream>
 #include "basic.parser.h"
 #include "string_cast.h"
+#include "code_writer_c.h"
 
 using namespace std;
 
@@ -99,14 +100,17 @@ struct MemoryInputStream : public FileInputStream
 string getInput()
 {
     return string(R"a(
-Dim a as integer, b as single, c as boolean
+Dim a As Integer = 23, b As Single, c As Boolean = True
 Do While c Or False
-    If True And c Then
+    If True And Not c Then
         Cast(TypeOf(1), 1.5)
     ElseIf c Then
-        cast(byref typeof(a), a)
-        csng(b)
+        Cast(ByRef TypeOf(a), a)
+        b = CSng(a)
     Else
+        While True
+            "abc""⌀"
+        WEnd
     End If
 Loop
 )a").substr(1);
@@ -116,7 +120,10 @@ int main()
 {
     try
     {
-        parseAll(make_shared<MemoryInputStream>(getInput()));
+        shared_ptr<AST::CodeBlock> code = parseAll(make_shared<MemoryInputStream>(getInput()));
+        shared_ptr<CodeWriter> cw = make_shared<CodeWriterC>(shared_ptr<ostream>(&cout, [](ostream *){}));
+        code->writeCode(*cw);
+        cw->finish();
     }
     catch(exception &e)
     {

@@ -53,7 +53,7 @@ inline std::string string_cast<std::string>(std::wstring wstr)
 #if WCHAR_BITS == 16
         if(value >= 0xD800U && value <= 0xDBFFU && i + 1 < wstr.size())
         {
-            unsigned nextValue = static_cast<unsigned>(static_cast<UNSIGNED_WCHAR>(wstr[i]));
+            unsigned nextValue = static_cast<unsigned>(static_cast<UNSIGNED_WCHAR>(wstr[i + 1]));
             if(nextValue >= 0xDC00U && nextValue <= 0xDFFFU)
             {
                 i++;

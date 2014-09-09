@@ -93,7 +93,7 @@ inline const AST::Symbol &getSymbolGlobal(ParserBase *parser, Token t)
     return getSymbolGlobal(parser, t.location, t.svalue);
 }
 
-ParserValueType parseAll(shared_ptr<InputStream> is);
+shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is);
 
 %}
 %option SymbolPrefix "TokenType::TT"
@@ -242,7 +242,31 @@ declarationPartList: declarationPart {$$ = $1;}
     | declarationPartList ',' declarationPart {$$ = $1; $$.nodes.insert($$.nodes.end(), $3.nodes.begin(), $3.nodes.end());}
     ;
 
-declarationPart: Id '=' expression {handleErrorNotImplemented($4.token);}
+declarationPart: Id '=' expression
+    {
+        shared_ptr<AST::Expression> rhs = dynamic_pointer_cast<AST::Expression>($3.node);
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>(rhs->type()->toRValue());
+        wstring name = $1.token.svalue;
+        Location location = $1.token.location;
+        shared_ptr<AST::Variable> variable;
+        AST::Symbol::Type stype;
+        if(type->isLValue())
+        {
+            handleErrorNotImplemented(location, L"ByRef variable");
+        }
+        else
+        {
+            type = AST::TypeReference::make(location, type);
+            variable = AST::AutoVariable::make(location, type, name);
+            stype = AST::Symbol::Type::AutoVariable;
+        }
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+            ::handleError(location, name + L" already defined");
+        sts.back()->make(AST::Symbol(name, stype, type, variable));
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable, AST::AssignStatement::make($2.token.location, variable, rhs)});
+    }
     | Id As type
     {
         shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
@@ -267,7 +291,30 @@ declarationPart: Id '=' expression {handleErrorNotImplemented($4.token);}
         sts.back()->make(AST::Symbol(name, stype, type, variable));
         $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
     }
-    | Id As type '=' expression {handleErrorNotImplemented($4.token);}
+    | Id As type '=' expression
+    {
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
+        wstring name = $1.token.svalue;
+        Location location = $1.token.location;
+        shared_ptr<AST::Variable> variable;
+        AST::Symbol::Type stype;
+        if(type->isLValue())
+        {
+            handleErrorNotImplemented(location, L"ByRef variable");
+        }
+        else
+        {
+            type = AST::TypeReference::make(location, type);
+            variable = AST::AutoVariable::make(location, type, name);
+            stype = AST::Symbol::Type::AutoVariable;
+        }
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+            ::handleError(location, name + L" already defined");
+        sts.back()->make(AST::Symbol(name, stype, type, variable));
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable, AST::AssignStatement::make($2.token.location, variable, dynamic_pointer_cast<AST::Expression>($5.node))});
+    }
     ;
 
 codeBlockWithNewLine: newLine codeBlock {$$ = $2;}
@@ -350,13 +397,13 @@ statement: ifStatement {$$ = $1;}
     | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     ;
 
-inlineStatement: expression_no_equals '=' expression {handleErrorNotImplemented($2.token.location, L"assignment");}
+inlineStatement: expression_no_equals '=' expression {$$ = ParserValueType(AST::AssignStatement::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     | Exit Do {handleErrorNotImplemented($1.token.location, L"Exit Do");}
     | Exit While {handleErrorNotImplemented($1.token.location, L"Exit While");}
     | Exit For {handleErrorNotImplemented($1.token.location, L"Exit For");}
     | Exit Sub {handleErrorNotImplemented($1.token.location, L"Exit Sub");}
     | Exit Function {handleErrorNotImplemented($1.token.location, L"Exit Function");}
-    | expression_no_equals {$$ = $1; wcout << L"debug: expression type = " << dynamic_cast<AST::Expression &>(*$1.node).type()->toString() << endl;}
+    | expression_no_equals {$$ = $1;}
     ;
 
 restOfLineStatement: If expression Then restOfLineStatementList {handleErrorNotImplemented($1.token);}
@@ -425,11 +472,11 @@ and_expression_no_equals: not_expression_no_equals {$$ = $1;}
     ;
 
 not_expression: compare_expression {$$ = $1;}
-    | Not not_expression {handleErrorNotImplemented($1.token);}
+    | Not not_expression {$$ = ParserValueType(AST::NotExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($2.node)));}
     ;
 
 not_expression_no_equals: compare_expression_no_equals {$$ = $1;}
-    | Not not_expression_no_equals {handleErrorNotImplemented($1.token);}
+    | Not not_expression_no_equals {$$ = ParserValueType(AST::NotExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($2.node)));}
     ;
 
 compare_expression: add_expression {$$ = $1;}
@@ -598,12 +645,12 @@ vector<shared_ptr<AST::SymbolTable>> &getSymbolTableStack(ParserBase *parser)
     return theParser->symbolTableStack;
 }
 
-ParserValueType parseAll(shared_ptr<InputStream> is)
+shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is)
 {
     Parser parser(is);
     try
     {
-        return parser.parse();
+        return dynamic_pointer_cast<AST::CodeBlock>(parser.parse().node);
     }
     catch(ParserBase::ParseError &e)
     {

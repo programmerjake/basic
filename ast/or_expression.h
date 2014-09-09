@@ -25,6 +25,7 @@ public:
     {
         return std::shared_ptr<OrExpression>(new OrExpression(location, arg1, arg2));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 }
 

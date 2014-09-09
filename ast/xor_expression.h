@@ -25,6 +25,7 @@ public:
     {
         return std::shared_ptr<XorExpression>(new XorExpression(location, arg1, arg2));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 }
 

@@ -43,6 +43,7 @@ public:
             return expression;
         return make(expression->location(), expression, newType, false);
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };
 }
 

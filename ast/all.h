@@ -18,5 +18,7 @@
 #include "ast/do_statement.h"
 #include "ast/type_reference.h"
 #include "ast/variable.h"
+#include "ast/assign_statement.h"
+#include "ast/not_expression.h"
 
 #endif // ALL_H_INCLUDED

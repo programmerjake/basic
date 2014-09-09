@@ -34,6 +34,7 @@ public:
     {
         return std::shared_ptr<DoStatement>(new DoStatement(location, condition, conditionType, body));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
 };
 }
 

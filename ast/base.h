@@ -4,6 +4,8 @@
 #include <memory>
 #include "location.h"
 
+class CodeWriter;
+
 namespace AST
 {
 class Base : public std::enable_shared_from_this<Base>
@@ -31,6 +33,7 @@ public:
     virtual ~Base()
     {
     }
+    virtual void writeCode(CodeWriter &cw) const = 0;
 };
 }
 

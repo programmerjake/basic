@@ -21,6 +21,7 @@ public:
     {
         return std::shared_ptr<CodeBlock>(new CodeBlock(location, symbols, statements));
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
 };
 }
 

@@ -59,6 +59,7 @@ public:
             return *type == *rt.toRValue();
         return false;
     }
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 protected:
     virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type> rt) const override
     {
