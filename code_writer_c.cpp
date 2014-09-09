@@ -300,6 +300,21 @@ void CodeWriterC::visitFDivExpression(shared_ptr<const AST::FDivExpression> node
     }
 }
 
+void CodeWriterC::visitIDivExpression(shared_ptr<const AST::IDivExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " / ";
+        e->writeCode(*this);
+        os() << ")";
+    }
+}
+
 void CodeWriterC::visitIfStatement(shared_ptr<const AST::IfStatement> node)
 {
     if(!didIndent)
@@ -333,6 +348,47 @@ void CodeWriterC::visitIntegerLiteralExpression(shared_ptr<const AST::IntegerLit
         os() << indent;
     didIndent = true;
     os() << string_cast<string>(node->toCString());
+}
+
+void CodeWriterC::visitModExpression(shared_ptr<const AST::ModExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " % ";
+        e->writeCode(*this);
+        os() << ")";
+    }
+}
+
+void CodeWriterC::visitMulExpression(shared_ptr<const AST::MulExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " * ";
+        e->writeCode(*this);
+        os() << ")";
+    }
+}
+
+void CodeWriterC::visitNegExpression(shared_ptr<const AST::NegExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    shared_ptr<AST::Expression> e = node->args().front();
+    os() << "-(";
+    e->writeCode(*this);
+    os() << ")";
 }
 
 void CodeWriterC::visitNotExpression(shared_ptr<const AST::NotExpression> node)
@@ -526,6 +582,21 @@ void CodeWriterC::visitStringLiteralExpression(shared_ptr<const AST::StringLiter
     os() << "\")";
 }
 
+void CodeWriterC::visitSubExpression(shared_ptr<const AST::SubExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " - ";
+        e->writeCode(*this);
+        os() << ")";
+    }
+}
+
 void CodeWriterC::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)
 {
     if(!didIndent)
@@ -637,6 +708,17 @@ void CodeWriterC::visitTypeUInt8(shared_ptr<const AST::TypeUInt8> node)
         os() << indent;
     didIndent = true;
     os() << "uint8_t";
+}
+
+void CodeWriterC::visitUnaryPlusExpression(shared_ptr<const AST::UnaryPlusExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    shared_ptr<AST::Expression> e = node->args().front();
+    os() << "+(";
+    e->writeCode(*this);
+    os() << ")";
 }
 
 void CodeWriterC::visitWhileStatement(shared_ptr<const AST::WhileStatement> node)

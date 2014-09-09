@@ -533,22 +533,22 @@ compare_expression_no_equals: add_expression {$$ = $1;}
 
 add_expression: mod_expression {$$ = $1;}
     | add_expression '+' mod_expression {$$ = ParserValueType(AST::AddExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
-    | add_expression '-' mod_expression {handleErrorNotImplemented($2.token.location, L"binary -");}
+    | add_expression '-' mod_expression {$$ = ParserValueType(AST::SubExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 mod_expression: mul_expression {$$ = $1;}
-    | mod_expression Mod mul_expression {handleErrorNotImplemented($2.token);}
-    | mod_expression '\\' mul_expression {handleErrorNotImplemented($2.token);}
+    | mod_expression Mod mul_expression {$$ = ParserValueType(AST::ModExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | mod_expression '\\' mul_expression {$$ = ParserValueType(AST::IDivExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 mul_expression: neg_expression {$$ = $1;}
-    | mul_expression '*' neg_expression {handleErrorNotImplemented($2.token);}
+    | mul_expression '*' neg_expression {$$ = ParserValueType(AST::MulExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     | mul_expression '/' neg_expression {$$ = ParserValueType(AST::FDivExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 neg_expression: toplevel_expression {$$ = $1;}
-    | '-' neg_expression {handleErrorNotImplemented($1.token.location, L"unary -");}
-    | '+' neg_expression {handleErrorNotImplemented($1.token.location, L"unary +");}
+    | '-' neg_expression {$$ = ParserValueType(AST::NegExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($2.node)));}
+    | '+' neg_expression {$$ = ParserValueType(AST::UnaryPlusExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($2.node)));}
     ;
 
 toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpression::make($1.token.location, $1.token.svalue));}

@@ -27,7 +27,6 @@ public:
         return std::shared_ptr<UnaryPlusExpression>(new UnaryPlusExpression(location, arg));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
-    #warning finish
 };
 }
 

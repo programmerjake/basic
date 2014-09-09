@@ -27,7 +27,6 @@ public:
         return std::shared_ptr<NegExpression>(new NegExpression(location, arg));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
-    #warning finish
 };
 }
 

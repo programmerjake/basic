@@ -43,14 +43,19 @@ public:
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) override;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) override;
     virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) override;
+    virtual void visitIDivExpression(std::shared_ptr<const AST::IDivExpression> node) override;
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) override;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) override;
+    virtual void visitModExpression(std::shared_ptr<const AST::ModExpression> node) override;
+    virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) override;
+    virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) override;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) override;
     virtual void visitOrExpression(std::shared_ptr<const AST::OrExpression> node) override;
     virtual void visitReferenceVariable(std::shared_ptr<const AST::ReferenceVariable> node) override;
     virtual void visitSingleLiteralExpression(std::shared_ptr<const AST::SingleLiteralExpression> node) override;
     virtual void visitStaticVariable(std::shared_ptr<const AST::StaticVariable> node) override;
     virtual void visitStringLiteralExpression(std::shared_ptr<const AST::StringLiteralExpression> node) override;
+    virtual void visitSubExpression(std::shared_ptr<const AST::SubExpression> node) override;
     virtual void visitTypeBoolean(std::shared_ptr<const AST::TypeBoolean> node) override;
     virtual void visitTypeDouble(std::shared_ptr<const AST::TypeDouble> node) override;
     virtual void visitTypeInt16(std::shared_ptr<const AST::TypeInt16> node) override;
@@ -65,6 +70,7 @@ public:
     virtual void visitTypeUInt32(std::shared_ptr<const AST::TypeUInt32> node) override;
     virtual void visitTypeUInt64(std::shared_ptr<const AST::TypeUInt64> node) override;
     virtual void visitTypeUInt8(std::shared_ptr<const AST::TypeUInt8> node) override;
+    virtual void visitUnaryPlusExpression(std::shared_ptr<const AST::UnaryPlusExpression> node) override;
     virtual void visitWhileStatement(std::shared_ptr<const AST::WhileStatement> node) override;
     virtual void visitXorExpression(std::shared_ptr<const AST::XorExpression> node) override;
     virtual void finish() override;

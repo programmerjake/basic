@@ -110,7 +110,12 @@ void FDivExpression::calcType()
     shared_ptr<Expression> &r = argsRef().at(1);
     shared_ptr<const Type> lBaseType = l->type()->getAbsoluteBaseType();
     shared_ptr<const Type> rBaseType = r->type()->getAbsoluteBaseType();
-    if(lBaseType == TypeDouble::getInstance() || rBaseType == TypeDouble::getInstance())
+    if(lBaseType == TypeDouble::getInstance()
+       || lBaseType == TypeInt64::getInstance()
+       || lBaseType == TypeUInt64::getInstance()
+       || rBaseType == TypeDouble::getInstance()
+       || rBaseType == TypeInt64::getInstance()
+       || rBaseType == TypeUInt64::getInstance())
         type(TypeDouble::getInstance());
     else if(lBaseType == TypeSingle::getInstance() || rBaseType == TypeSingle::getInstance())
         type(TypeSingle::getInstance());
@@ -118,6 +123,54 @@ void FDivExpression::calcType()
         type(TypeDouble::getInstance());
     l = CastExpression::castImplicit(l, type());
     r = CastExpression::castImplicit(r, type());
+}
+
+void IDivExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"\\"));
+    if(type()->isIntegralType())
+        return;
+    throw ParserError(location(), L"invalid argument types for \\");
+}
+
+void ModExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"Mod"));
+    if(type()->isIntegralType())
+        return;
+    throw ParserError(location(), L"invalid argument types for Mod");
+}
+
+void MulExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"*"));
+    if(type()->isNumericType())
+        return;
+    throw ParserError(location(), L"invalid argument types for *");
+}
+
+void NegExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"unary -"));
+    if(type()->isNumericType())
+        return;
+    throw ParserError(location(), L"invalid argument type for unary -");
+}
+
+void UnaryPlusExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"unary +"));
+    if(type()->isNumericType())
+        return;
+    throw ParserError(location(), L"invalid argument type for unary +");
+}
+
+void SubExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"binary -"));
+    if(type()->isNumericType())
+        return;
+    throw ParserError(location(), L"invalid argument types for binary -");
 }
 
 namespace
@@ -379,5 +432,35 @@ void AddExpression::writeCode(CodeWriter &cw) const
 void FDivExpression::writeCode(CodeWriter &cw) const
 {
     cw.visitFDivExpression(static_pointer_cast<const FDivExpression>(shared_from_this()));
+}
+
+void IDivExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitIDivExpression(static_pointer_cast<const IDivExpression>(shared_from_this()));
+}
+
+void ModExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitModExpression(static_pointer_cast<const ModExpression>(shared_from_this()));
+}
+
+void MulExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitMulExpression(static_pointer_cast<const MulExpression>(shared_from_this()));
+}
+
+void NegExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitNegExpression(static_pointer_cast<const NegExpression>(shared_from_this()));
+}
+
+void SubExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitSubExpression(static_pointer_cast<const SubExpression>(shared_from_this()));
+}
+
+void UnaryPlusExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitUnaryPlusExpression(static_pointer_cast<const UnaryPlusExpression>(shared_from_this()));
 }
 }

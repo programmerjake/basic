@@ -143,6 +143,11 @@ void CodeWriterDump::visitFDivExpression(shared_ptr<const AST::FDivExpression> n
     dumpExpression(node, "FDiv");
 }
 
+void CodeWriterDump::visitIDivExpression(shared_ptr<const AST::IDivExpression> node)
+{
+    dumpExpression(node, "IDiv");
+}
+
 void CodeWriterDump::visitIfStatement(shared_ptr<const AST::IfStatement> node)
 {
     string nodeName = "If";
@@ -170,6 +175,21 @@ void CodeWriterDump::visitIfStatement(shared_ptr<const AST::IfStatement> node)
 void CodeWriterDump::visitIntegerLiteralExpression(shared_ptr<const AST::IntegerLiteralExpression> node)
 {
     os() << indent << "IntegerLiteral: " << string_cast<string>(node->toSourceString()) << "\n";
+}
+
+void CodeWriterDump::visitModExpression(shared_ptr<const AST::ModExpression> node)
+{
+    dumpExpression(node, "Mod");
+}
+
+void CodeWriterDump::visitMulExpression(shared_ptr<const AST::MulExpression> node)
+{
+    dumpExpression(node, "Mul");
+}
+
+void CodeWriterDump::visitNegExpression(shared_ptr<const AST::NegExpression> node)
+{
+    dumpExpression(node, "Neg");
 }
 
 void CodeWriterDump::visitNotExpression(shared_ptr<const AST::NotExpression> node)
@@ -226,6 +246,11 @@ void CodeWriterDump::visitStaticVariable(shared_ptr<const AST::StaticVariable> n
 void CodeWriterDump::visitStringLiteralExpression(shared_ptr<const AST::StringLiteralExpression> node)
 {
     os() << indent << "StringLiteral: " << string_cast<string>(node->toSourceString()) << "\n";
+}
+
+void CodeWriterDump::visitSubExpression(shared_ptr<const AST::SubExpression> node)
+{
+    dumpExpression(node, "Subtract");
 }
 
 void CodeWriterDump::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)
@@ -299,6 +324,11 @@ void CodeWriterDump::visitTypeUInt64(shared_ptr<const AST::TypeUInt64> node)
 void CodeWriterDump::visitTypeUInt8(shared_ptr<const AST::TypeUInt8> node)
 {
     os() << indent << "TypeUInt8\n";
+}
+
+void CodeWriterDump::visitUnaryPlusExpression(shared_ptr<const AST::UnaryPlusExpression> node)
+{
+    dumpExpression(node, "UnaryPlus");
 }
 
 void CodeWriterDump::visitWhileStatement(shared_ptr<const AST::WhileStatement> node)

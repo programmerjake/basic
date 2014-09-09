@@ -27,7 +27,6 @@ public:
         return std::shared_ptr<SubExpression>(new SubExpression(location, arg1, arg2));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
-    #warning finish
 };
 }
 
