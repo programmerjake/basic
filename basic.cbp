@@ -34,6 +34,7 @@
 			<Add option="-std=c++11" />
 			<Add option="-fexceptions -I." />
 		</Compiler>
+		<Unit filename="ast/add_expression.h" />
 		<Unit filename="ast/all.h" />
 		<Unit filename="ast/and_expression.h" />
 		<Unit filename="ast/assign_statement.h" />
@@ -44,17 +45,24 @@
 		<Unit filename="ast/do_statement.h" />
 		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/expressions.cpp" />
+		<Unit filename="ast/fdiv_expression.h" />
+		<Unit filename="ast/idiv_expression.h" />
 		<Unit filename="ast/if_statement.h" />
 		<Unit filename="ast/literal_expression.h" />
+		<Unit filename="ast/mod_expression.h" />
+		<Unit filename="ast/mul_expression.h" />
+		<Unit filename="ast/neg_expression.h" />
 		<Unit filename="ast/not_expression.h" />
 		<Unit filename="ast/or_expression.h" />
 		<Unit filename="ast/statement.h" />
 		<Unit filename="ast/statements.cpp" />
+		<Unit filename="ast/sub_expression.h" />
 		<Unit filename="ast/symbol_table.h" />
 		<Unit filename="ast/type.h" />
 		<Unit filename="ast/type_builtin.cpp" />
 		<Unit filename="ast/type_builtin.h" />
 		<Unit filename="ast/type_reference.h" />
+		<Unit filename="ast/unary_plus_expression.h" />
 		<Unit filename="ast/variable.h" />
 		<Unit filename="ast/while_statement.h" />
 		<Unit filename="ast/xor_expression.h" />

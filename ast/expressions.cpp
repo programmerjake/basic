@@ -6,6 +6,7 @@
 #include "ast/cast_expression.h"
 #include "ast/literal_expression.h"
 #include "ast/not_expression.h"
+#include "ast/add_expression.h"
 #include "error.h"
 #include "code_writer.h"
 #include <algorithm>
@@ -91,6 +92,32 @@ void CompareExpression::checkTypes()
     if(t->getAbsoluteBaseType() == TypeString::getInstance())
         return;
     throw ParserError(location(), L"invalid argument types for " + getOperatorString(ctype()));
+}
+
+void AddExpression::calcType()
+{
+    type(calcTypeH(argsRef(), L"binary +"));
+    if(type()->isNumericType())
+        return;
+    if(type()->getAbsoluteBaseType() == TypeString::getInstance())
+        return;
+    throw ParserError(location(), L"invalid argument types for binary +");
+}
+
+void FDivExpression::calcType()
+{
+    shared_ptr<Expression> &l = argsRef().at(0);
+    shared_ptr<Expression> &r = argsRef().at(1);
+    shared_ptr<const Type> lBaseType = l->type()->getAbsoluteBaseType();
+    shared_ptr<const Type> rBaseType = r->type()->getAbsoluteBaseType();
+    if(lBaseType == TypeDouble::getInstance() || rBaseType == TypeDouble::getInstance())
+        type(TypeDouble::getInstance());
+    else if(lBaseType == TypeSingle::getInstance() || rBaseType == TypeSingle::getInstance())
+        type(TypeSingle::getInstance());
+    else
+        type(TypeDouble::getInstance());
+    l = CastExpression::castImplicit(l, type());
+    r = CastExpression::castImplicit(r, type());
 }
 
 namespace
@@ -342,5 +369,15 @@ void XorExpression::writeCode(CodeWriter &cw) const
 void CompareExpression::writeCode(CodeWriter &cw) const
 {
     cw.visitCompareExpression(static_pointer_cast<const CompareExpression>(shared_from_this()));
+}
+
+void AddExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitAddExpression(static_pointer_cast<const AddExpression>(shared_from_this()));
+}
+
+void FDivExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitFDivExpression(static_pointer_cast<const FDivExpression>(shared_from_this()));
 }
 }

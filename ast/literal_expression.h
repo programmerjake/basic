@@ -63,7 +63,7 @@ public:
     {
         std::wostringstream ss;
         ss.precision(useHighPrecision ? 17 : 15);
-        ss << value;
+        ss << std::showpoint << value;
         return ss.str();
     }
     virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp

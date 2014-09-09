@@ -21,5 +21,13 @@
 #include "ast/assign_statement.h"
 #include "ast/not_expression.h"
 #include "ast/compare_expression.h"
+#include "ast/add_expression.h"
+#include "ast/fdiv_expression.h"
+#include "ast/idiv_expression.h"
+#include "ast/mod_expression.h"
+#include "ast/mul_expression.h"
+#include "ast/neg_expression.h"
+#include "ast/sub_expression.h"
+#include "ast/unary_plus_expression.h"
 
 #endif // ALL_H_INCLUDED

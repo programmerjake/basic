@@ -32,6 +32,7 @@ public:
         : dumpStream(dumpStream)
     {
     }
+    virtual void visitAddExpression(std::shared_ptr<const AST::AddExpression> node) override;
     virtual void visitAndExpression(std::shared_ptr<const AST::AndExpression> node) override;
     virtual void visitAssignStatement(std::shared_ptr<const AST::AssignStatement> node) override;
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) override;
@@ -41,6 +42,7 @@ public:
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) override;
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) override;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) override;
+    virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) override;
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) override;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) override;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) override;

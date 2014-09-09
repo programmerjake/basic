@@ -19,6 +19,11 @@ void CodeWriterDump::dumpExpression(shared_ptr<const AST::Expression> node, stri
     indent.depth--;
 }
 
+void CodeWriterDump::visitAddExpression(shared_ptr<const AST::AddExpression> node)
+{
+    dumpExpression(node, "Add");
+}
+
 void CodeWriterDump::visitAndExpression(shared_ptr<const AST::AndExpression> node)
 {
     dumpExpression(node, "And");
@@ -131,6 +136,11 @@ void CodeWriterDump::visitDoStatement(shared_ptr<const AST::DoStatement> node)
 void CodeWriterDump::visitDoubleLiteralExpression(shared_ptr<const AST::DoubleLiteralExpression> node)
 {
     os() << indent << "DoubleLiteral: " << string_cast<string>(node->toSourceString()) << "\n";
+}
+
+void CodeWriterDump::visitFDivExpression(shared_ptr<const AST::FDivExpression> node)
+{
+    dumpExpression(node, "FDiv");
 }
 
 void CodeWriterDump::visitIfStatement(shared_ptr<const AST::IfStatement> node)

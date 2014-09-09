@@ -15,6 +15,7 @@ public:
     virtual ~CodeWriter()
     {
     }
+    virtual void visitAddExpression(std::shared_ptr<const AST::AddExpression> node) = 0;
     virtual void visitAndExpression(std::shared_ptr<const AST::AndExpression> node) = 0;
     virtual void visitAssignStatement(std::shared_ptr<const AST::AssignStatement> node) = 0;
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) = 0;
@@ -24,6 +25,7 @@ public:
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) = 0;
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) = 0;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) = 0;
+    virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) = 0;
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) = 0;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) = 0;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) = 0;

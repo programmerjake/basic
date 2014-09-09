@@ -3,6 +3,21 @@
 
 using namespace std;
 
+void CodeWriterC::visitAddExpression(shared_ptr<const AST::AddExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " + ";
+        e->writeCode(*this);
+        os() << ")";
+    }
+}
+
 void CodeWriterC::visitAndExpression(shared_ptr<const AST::AndExpression> node)
 {
     if(!didIndent)
@@ -266,8 +281,23 @@ void CodeWriterC::visitDoubleLiteralExpression(shared_ptr<const AST::DoubleLiter
     didIndent = true;
     ostringstream ss;
     ss.precision(17);
-    ss << node->value;
+    ss << showpoint << node->value;
     os() << ss.str();
+}
+
+void CodeWriterC::visitFDivExpression(shared_ptr<const AST::FDivExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string seperator = "";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator << "(";
+        seperator = " / ";
+        e->writeCode(*this);
+        os() << ")";
+    }
 }
 
 void CodeWriterC::visitIfStatement(shared_ptr<const AST::IfStatement> node)
@@ -379,7 +409,7 @@ void CodeWriterC::visitSingleLiteralExpression(shared_ptr<const AST::SingleLiter
     didIndent = true;
     ostringstream ss;
     ss.precision(9);
-    ss << node->value << "f";
+    ss << showpoint << node->value << "f";
     os() << ss.str();
 }
 
