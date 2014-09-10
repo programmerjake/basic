@@ -253,14 +253,29 @@ void BuiltInFunctionExpression::calcType()
         return;
     }
     case BuiltInFunctionExpression::FnType::Hex:
-        assert(false);
+    {
+        shared_ptr<const Type> baseType = args().front()->type()->toRValue()->getAbsoluteBaseType();
+        if(!baseType->isIntegralType())
+            throw ParserError(location(), L"invalid argument type for Hex");
+        type(TypeString::getInstance());
+        argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
         return;
+    }
     case BuiltInFunctionExpression::FnType::InStr2:
-        assert(false);
+    {
+        type(TypeInteger::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeString::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::InStr3:
-        assert(false);
+    {
+        type(TypeInteger::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeString::getInstance());
+        argsRef()[2] = CastExpression::castImplicit(args()[2], TypeInteger::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::LBound1:
         assert(false);
         return;
@@ -268,38 +283,95 @@ void BuiltInFunctionExpression::calcType()
         assert(false);
         return;
     case BuiltInFunctionExpression::FnType::LCase:
-        assert(false);
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::Left:
-        assert(false);
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
         return;
-    case BuiltInFunctionExpression::FnType::Mid2:
-        assert(false);
-        return;
-    case BuiltInFunctionExpression::FnType::Mid3:
-        assert(false);
-        return;
-    case BuiltInFunctionExpression::FnType::Oct:
-        assert(false);
-        return;
-    case BuiltInFunctionExpression::FnType::Right:
-        assert(false);
-        return;
-    case BuiltInFunctionExpression::FnType::RTrim:
-        assert(false);
-        return;
-    case BuiltInFunctionExpression::FnType::Sgn:
+    }
+    case BuiltInFunctionExpression::FnType::Len:
     {
         shared_ptr<const Type> baseType = args().front()->type()->toRValue()->getAbsoluteBaseType();
-        if(baseType != TypeDouble::getInstance()
-           && baseType != TypeSingle::getInstance()
-           && baseType != TypeInteger::getInstance()
-           && baseType != TypeInt8::getInstance()
-           && baseType != TypeInt16::getInstance()
-           && baseType != TypeInt32::getInstance()
-           && baseType != TypeInt64::getInstance())
-            throw ParserError(location(), L"invalid argument type for Abs");
+        if(baseType != TypeString::getInstance())
+            throw ParserError(location(), L"invalid argument type for Len");
+        type(TypeInteger::getInstance());
+        argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::Log:
+    {
+        shared_ptr<const Type> baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeSingle::getInstance());
+        if(baseType == nullptr)
+            throw ParserError(location(), L"invalid argument type for Log");
         type(baseType);
+        argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::LTrim:
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::Mid2:
+    {
+        type(TypeReference::make(Location(), TypeString::getInstance()));
+        if(*args()[0]->type() == *type())
+            argsRef()[0] = CastExpression::castImplicit(args()[0], type());
+        else
+            argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::Mid3:
+    {
+        type(TypeReference::make(Location(), TypeString::getInstance()));
+        if(*args()[0]->type() == *type())
+            argsRef()[0] = CastExpression::castImplicit(args()[0], type());
+        else
+            argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
+        argsRef()[2] = CastExpression::castImplicit(args()[2], TypeInteger::getInstance());
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::Oct:
+    {
+        shared_ptr<const Type> baseType = args().front()->type()->toRValue()->getAbsoluteBaseType();
+        if(!baseType->isIntegralType())
+            throw ParserError(location(), L"invalid argument type for Hex");
+        type(TypeString::getInstance());
+        argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::Right:
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::RTrim:
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
+        return;
+    }
+    case BuiltInFunctionExpression::FnType::Sgn:
+    {
+        shared_ptr<const Type> baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeUInt64::getInstance());
+        if(baseType == nullptr)
+            baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeInt64::getInstance());
+        if(baseType == nullptr)
+            baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeDouble::getInstance());
+        if(baseType == nullptr)
+            throw ParserError(location(), L"invalid argument type for Sgn");
+        type(TypeInteger::getInstance());
         argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
         return;
     }
@@ -313,8 +385,11 @@ void BuiltInFunctionExpression::calcType()
         return;
     }
     case BuiltInFunctionExpression::FnType::Space:
-        assert(false);
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeInteger::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::Sqr:
     {
         shared_ptr<const Type> baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeSingle::getInstance());
@@ -324,9 +399,26 @@ void BuiltInFunctionExpression::calcType()
         argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
         return;
     }
-    case BuiltInFunctionExpression::FnType::String:
-        assert(false);
+    case BuiltInFunctionExpression::FnType::Str:
+    {
+        shared_ptr<const Type> baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeUInt64::getInstance());
+        if(baseType == nullptr)
+            baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeInt64::getInstance());
+        if(baseType == nullptr)
+            baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeDouble::getInstance());
+        if(baseType == nullptr)
+            throw ParserError(location(), L"invalid argument type for Str");
+        type(baseType);
+        argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
         return;
+    }
+    case BuiltInFunctionExpression::FnType::String:
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeInteger::getInstance());
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
+        return;
+    }
     case BuiltInFunctionExpression::FnType::Tan:
     {
         shared_ptr<const Type> baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeSingle::getInstance());
@@ -343,11 +435,17 @@ void BuiltInFunctionExpression::calcType()
         assert(false);
         return;
     case BuiltInFunctionExpression::FnType::UCase:
-        assert(false);
+    {
+        type(TypeString::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::Val:
-        assert(false);
+    {
+        type(TypeDouble::getInstance());
+        argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
         return;
+    }
     }
     assert(false);
 }

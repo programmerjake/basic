@@ -32,6 +32,9 @@ public:
         LBound2,
         LCase,
         Left,
+        Len,
+        Log,
+        LTrim,
         Mid2,
         Mid3,
         Oct,
@@ -41,6 +44,7 @@ public:
         Sin,
         Space,
         Sqr,
+        Str,
         String,
         Tan,
         UBound1,
@@ -80,6 +84,12 @@ public:
             return 1;
         case FnType::Left:
             return 2;
+        case FnType::Len:
+            return 1;
+        case FnType::Log:
+            return 1;
+        case FnType::LTrim:
+            return 1;
         case FnType::Mid2:
             return 2;
         case FnType::Mid3:
@@ -97,6 +107,8 @@ public:
         case FnType::Space:
             return 1;
         case FnType::Sqr:
+            return 1;
+        case FnType::Str:
             return 1;
         case FnType::String:
             return 2;
@@ -146,6 +158,12 @@ public:
             return L"LCase";
         case FnType::Left:
             return L"Left";
+        case FnType::Len:
+            return L"Len";
+        case FnType::Log:
+            return L"Log";
+        case FnType::LTrim:
+            return L"LTrim";
         case FnType::Mid2:
             return L"Mid2";
         case FnType::Mid3:
@@ -164,6 +182,8 @@ public:
             return L"Space";
         case FnType::Sqr:
             return L"Sqr";
+        case FnType::Str:
+            return L"Str";
         case FnType::String:
             return L"String";
         case FnType::Tan:
@@ -212,6 +232,12 @@ public:
             return L"LCase";
         case FnType::Left:
             return L"Left";
+        case FnType::Len:
+            return L"Len";
+        case FnType::Log:
+            return L"Log";
+        case FnType::LTrim:
+            return L"LTrim";
         case FnType::Mid2:
             return L"Mid";
         case FnType::Mid3:
@@ -230,6 +256,8 @@ public:
             return L"Space";
         case FnType::Sqr:
             return L"Sqr";
+        case FnType::Str:
+            return L"Str";
         case FnType::String:
             return L"String";
         case FnType::Tan:
@@ -249,20 +277,20 @@ public:
 private:
     FnType fnType_;
     void calcType(); // in expressions.cpp
-    BuiltInFunctionExpression(Location location, std::shared_ptr<Expression> arg1)
-        : Expression(location, nullptr)
+    BuiltInFunctionExpression(Location location, FnType fnType, std::shared_ptr<Expression> arg1)
+        : Expression(location, nullptr), fnType_(fnType)
     {
         argsRef() = std::initializer_list<std::shared_ptr<Expression>>{arg1};
         calcType();
     }
-    BuiltInFunctionExpression(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
-        : Expression(location, nullptr)
+    BuiltInFunctionExpression(Location location, FnType fnType, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
+        : Expression(location, nullptr), fnType_(fnType)
     {
         argsRef() = std::initializer_list<std::shared_ptr<Expression>>{arg1, arg2};
         calcType();
     }
-    BuiltInFunctionExpression(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::shared_ptr<Expression> arg3)
-        : Expression(location, nullptr)
+    BuiltInFunctionExpression(Location location, FnType fnType, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::shared_ptr<Expression> arg3)
+        : Expression(location, nullptr), fnType_(fnType)
     {
         argsRef() = std::initializer_list<std::shared_ptr<Expression>>{arg1, arg2, arg3};
         calcType();
@@ -272,17 +300,17 @@ public:
     {
         return fnType_;
     }
-    static std::shared_ptr<BuiltInFunctionExpression> make(Location location, std::shared_ptr<Expression> arg1)
+    static std::shared_ptr<BuiltInFunctionExpression> make(Location location, FnType fnType, std::shared_ptr<Expression> arg1)
     {
-        return std::shared_ptr<BuiltInFunctionExpression>(new BuiltInFunctionExpression(location, arg1));
+        return std::shared_ptr<BuiltInFunctionExpression>(new BuiltInFunctionExpression(location, fnType, arg1));
     }
-    static std::shared_ptr<BuiltInFunctionExpression> make(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
+    static std::shared_ptr<BuiltInFunctionExpression> make(Location location, FnType fnType, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2)
     {
-        return std::shared_ptr<BuiltInFunctionExpression>(new BuiltInFunctionExpression(location, arg1, arg2));
+        return std::shared_ptr<BuiltInFunctionExpression>(new BuiltInFunctionExpression(location, fnType, arg1, arg2));
     }
-    static std::shared_ptr<BuiltInFunctionExpression> make(Location location, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::shared_ptr<Expression> arg3)
+    static std::shared_ptr<BuiltInFunctionExpression> make(Location location, FnType fnType, std::shared_ptr<Expression> arg1, std::shared_ptr<Expression> arg2, std::shared_ptr<Expression> arg3)
     {
-        return std::shared_ptr<BuiltInFunctionExpression>(new BuiltInFunctionExpression(location, arg1, arg2, arg3));
+        return std::shared_ptr<BuiltInFunctionExpression>(new BuiltInFunctionExpression(location, fnType, arg1, arg2, arg3));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in expressions.cpp
 };

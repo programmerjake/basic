@@ -128,21 +128,24 @@ int main(int argc, char **argv)
     try
     {
         shared_ptr<InputStream> is;
-        if(fileName != L"")
-            is = make_shared<FileInputStream>(fileName);
-        else
+        if(fileName.empty())
             is = make_shared<FileInputStream>();
+        else
+            is = make_shared<FileInputStream>(fileName);
         shared_ptr<AST::CodeBlock> code = parseAll(is);
         is = nullptr;
         shared_ptr<CodeWriter> cw;
-#if 0
-        cw = make_shared<CodeWriterDump>(shared_ptr<ostream>(&cout, [](ostream *){}));
+        shared_ptr<ostream> os;
+        if(fileName.empty())
+            os = shared_ptr<ostream>(&cout, [](ostream *){});
+        else
+            os = make_shared<ofstream>(string_cast<string>(fileName + L".cpp").c_str());
+        if(!*os)
+            throw runtime_error("error: can't open " + string_cast<string>(fileName + L".cpp") + "for output");
+        cw = make_shared<CodeWriterC>(os);
         code->writeCode(*cw);
         cw->finish();
-#endif
-        cw = make_shared<CodeWriterC>(shared_ptr<ostream>(&cout, [](ostream *){}));
-        code->writeCode(*cw);
-        cw->finish();
+        cw = nullptr;
     }
     catch(exception &e)
     {

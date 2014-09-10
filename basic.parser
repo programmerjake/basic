@@ -558,12 +558,12 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | True {$$ = ParserValueType(AST::BooleanLiteralExpression::make($1.token.location, true));}
     | False {$$ = ParserValueType(AST::BooleanLiteralExpression::make($1.token.location, false));}
     | '(' expression ')' {$$ = $2;}
-    | Abs '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Asc '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | ATn '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | ATn '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | Chr '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Cos '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Abs '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Abs, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Asc '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Asc, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | ATn '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::ATn1, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | ATn '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::ATn2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | Chr '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Chr, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Cos '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Cos, dynamic_pointer_cast<AST::Expression>($3.node)));}
     | CBool '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeBoolean::getInstance(), false));}
     | CU8/*=CByte*/ '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt8::getInstance(), false));}
     | CU16 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeUInt16::getInstance(), false));}
@@ -578,32 +578,36 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | CI32 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt32::getInstance(), false));}
     | CI64 '(' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($3.node), AST::TypeInt64::getInstance(), false));}
     | Cast '(' type ',' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<const AST::Type>($3.node), false));}
-    | Exp '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Hex '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | Exp '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Exp, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Hex '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Hex, dynamic_pointer_cast<AST::Expression>($3.node)));}
     | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError($1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
     | toplevel_expression '[' expression ']' {handleErrorNotImplemented($2.token.location, L"array index");}
     | toplevel_expression '(' fn_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Function call");}
-    | InStr '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | InStr '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | LBound '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | LBound '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | LCase '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Left '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | Mid '(' expression ',' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | Mid '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | Oct '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Right '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | RTrim '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Sgn '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Sin '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Space '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Sqr '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | String '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | Tan '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | UBound '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | UBound '(' expression ',' expression ')' {handleErrorNotImplemented($1.token);}
-    | UCase '(' expression ')' {handleErrorNotImplemented($1.token);}
-    | Val '(' expression ')' {handleErrorNotImplemented($1.token);}
+    | InStr '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | InStr '(' expression ',' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr3, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<AST::Expression>($7.node)));}
+    | LBound '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::LBound1, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | LBound '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::LBound2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | LCase '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::LCase, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Left '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Left, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | Len '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Len, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Log '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Log, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | LTrim '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::LTrim, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Mid '(' expression ',' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Mid3, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<AST::Expression>($7.node)));}
+    | Mid '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Mid2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | Oct '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Oct, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Right '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Right, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | RTrim '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::RTrim, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Sgn '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Sgn, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Sin '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Sin, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Space '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Space, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Sqr '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Sqr, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Str '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Str, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | String '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::String, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | Tan '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Tan, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | UBound '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::UBound1, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | UBound '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::UBound2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
+    | UCase '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::UCase, dynamic_pointer_cast<AST::Expression>($3.node)));}
+    | Val '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Val, dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
 fn_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
