@@ -1,4 +1,5 @@
 #include "ast/if_statement.h"
+#include "ast/for_statement.h"
 #include "ast/type.h"
 #include "ast/type_builtin.h"
 #include "ast/code_block.h"
@@ -24,9 +25,40 @@ void IfStatement::checkTypes()
     }
 }
 
+void ForStatement::calcTypes()
+{
+    if(!variable->type()->isLValue())
+        throw ParserError(location(), L"For variable is not a lvalue");
+    if(!variable->type()->isNumericType())
+        throw ParserError(location(), L"invalid type for For variable");
+    shared_ptr<const Type> variableType = variable->type()->toRValue()->getAbsoluteBaseType();
+    if(step == nullptr)
+    {
+        if(variableType == TypeSingle::getInstance())
+            step = SingleLiteralExpression::make(location(), 1);
+        else if(variableType == TypeDouble::getInstance())
+            step = DoubleLiteralExpression::make(location(), 1);
+        else if(variableType == TypeInt8::getInstance())
+            step = IntegerLiteralExpression::make(location(), 1, true, TypeInt8::getInstance());
+        else
+            step = CastExpression::castImplicit(IntegerLiteralExpression::make(location(), 1, false, TypeUInt8::getInstance()), variableType);
+    }
+    else
+    {
+        step = CastExpression::castImplicit(step, variableType);
+    }
+    start = CastExpression::castImplicit(start, variableType);
+    end = CastExpression::castImplicit(end, variableType);
+}
+
 void AssignStatement::writeCode(CodeWriter &cw) const
 {
     cw.visitAssignStatement(static_pointer_cast<const AssignStatement>(shared_from_this()));
+}
+
+void InitializeStatement::writeCode(CodeWriter &cw) const
+{
+    cw.visitInitializeStatement(static_pointer_cast<const InitializeStatement>(shared_from_this()));
 }
 
 void CodeBlock::writeCode(CodeWriter &cw) const
@@ -47,5 +79,10 @@ void IfStatement::writeCode(CodeWriter &cw) const
 void WhileStatement::writeCode(CodeWriter &cw) const
 {
     cw.visitWhileStatement(static_pointer_cast<const WhileStatement>(shared_from_this()));
+}
+
+void ForStatement::writeCode(CodeWriter &cw) const
+{
+    cw.visitForStatement(static_pointer_cast<const ForStatement>(shared_from_this()));
 }
 }

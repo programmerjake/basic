@@ -27,8 +27,10 @@ public:
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) = 0;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) = 0;
     virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) = 0;
+    virtual void visitForStatement(std::shared_ptr<const AST::ForStatement> node) = 0;
     virtual void visitIDivExpression(std::shared_ptr<const AST::IDivExpression> node) = 0;
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) = 0;
+    virtual void visitInitializeStatement(std::shared_ptr<const AST::InitializeStatement> node) = 0;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) = 0;
     virtual void visitModExpression(std::shared_ptr<const AST::ModExpression> node) = 0;
     virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) = 0;

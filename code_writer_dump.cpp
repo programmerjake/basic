@@ -148,6 +148,32 @@ void CodeWriterDump::visitFDivExpression(shared_ptr<const AST::FDivExpression> n
     dumpExpression(node, "FDiv");
 }
 
+void CodeWriterDump::visitForStatement(shared_ptr<const AST::ForStatement> node)
+{
+    string nodeName = "For";
+    os() << indent << nodeName << ": " << string_cast<string>(static_cast<wstring>(node->location())) << "\n";
+    os() << indent << nodeName << ".variable:\n";
+    indent.depth++;
+    node->variable->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".start:\n";
+    indent.depth++;
+    node->start->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".end:\n";
+    indent.depth++;
+    node->end->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".step:\n";
+    indent.depth++;
+    node->step->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".body:\n";
+    indent.depth++;
+    node->body->writeCode(*this);
+    indent.depth--;
+}
+
 void CodeWriterDump::visitIDivExpression(shared_ptr<const AST::IDivExpression> node)
 {
     dumpExpression(node, "IDiv");
@@ -175,6 +201,14 @@ void CodeWriterDump::visitIfStatement(shared_ptr<const AST::IfStatement> node)
         node->elseSection->writeCode(*this);
         indent.depth--;
     }
+}
+
+void CodeWriterDump::visitInitializeStatement(shared_ptr<const AST::InitializeStatement> node)
+{
+    os() << indent << "InitializeStatement:\n";
+    indent.depth++;
+    node->variable->writeCode(*this);
+    indent.depth--;
 }
 
 void CodeWriterDump::visitIntegerLiteralExpression(shared_ptr<const AST::IntegerLiteralExpression> node)

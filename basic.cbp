@@ -51,8 +51,10 @@
 		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/expressions.cpp" />
 		<Unit filename="ast/fdiv_expression.h" />
+		<Unit filename="ast/for_statement.h" />
 		<Unit filename="ast/idiv_expression.h" />
 		<Unit filename="ast/if_statement.h" />
+		<Unit filename="ast/initialize_statement.h" />
 		<Unit filename="ast/literal_expression.h" />
 		<Unit filename="ast/mod_expression.h" />
 		<Unit filename="ast/mul_expression.h" />

@@ -30,5 +30,7 @@
 #include "ast/sub_expression.h"
 #include "ast/unary_plus_expression.h"
 #include "ast/builtin_function.h"
+#include "ast/initialize_statement.h"
+#include "ast/for_statement.h"
 
 #endif // ALL_H_INCLUDED

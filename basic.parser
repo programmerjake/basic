@@ -265,7 +265,7 @@ declarationPart: Id '=' expression
         if(sts.back()->exists(name))
             ::handleError(location, name + L" already defined");
         sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{AST::InitializeStatement::make(variable)});
     }
     | Id As type
     {
@@ -289,7 +289,7 @@ declarationPart: Id '=' expression
         if(sts.back()->exists(name))
             ::handleError(location, name + L" already defined");
         sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{AST::InitializeStatement::make(variable)});
     }
     | Id As type '=' expression
     {
@@ -315,7 +315,7 @@ declarationPart: Id '=' expression
         if(sts.back()->exists(name))
             ::handleError(location, name + L" already defined");
         sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{variable});
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{AST::InitializeStatement::make(variable)});
     }
     ;
 
@@ -383,9 +383,9 @@ statement: ifStatement {$$ = $1;}
     | Do codeBlockWithNewLine Loop
     {
         $$ = ParserValueType(AST::DoStatement::make($1.token.location,
-                                                       nullptr,
-                                                       AST::DoStatement::ConditionType::None,
-                                                       dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+                                                    nullptr,
+                                                    AST::DoStatement::ConditionType::None,
+                                                    dynamic_pointer_cast<AST::CodeBlock>($2.node)));
     }
     | While expression codeBlockWithNewLine WEnd
     {
@@ -393,8 +393,24 @@ statement: ifStatement {$$ = $1;}
                                                        dynamic_pointer_cast<AST::Expression>($2.node),
                                                        dynamic_pointer_cast<AST::CodeBlock>($3.node)));
     }
-    | For expression_no_equals '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
-    | For expression_no_equals '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | For expression_no_equals '=' expression To expression codeBlockWithNewLine Next
+    {
+        $$ = ParserValueType(AST::ForStatement::make($1.token.location,
+                                                     dynamic_pointer_cast<AST::Expression>($2.node),
+                                                     dynamic_pointer_cast<AST::Expression>($4.node),
+                                                     dynamic_pointer_cast<AST::Expression>($6.node),
+                                                     nullptr,
+                                                     dynamic_pointer_cast<AST::CodeBlock>($7.node)));
+    }
+    | For expression_no_equals '=' expression To expression Step expression codeBlockWithNewLine Next
+    {
+        $$ = ParserValueType(AST::ForStatement::make($1.token.location,
+                                                     dynamic_pointer_cast<AST::Expression>($2.node),
+                                                     dynamic_pointer_cast<AST::Expression>($4.node),
+                                                     dynamic_pointer_cast<AST::Expression>($6.node),
+                                                     dynamic_pointer_cast<AST::Expression>($8.node),
+                                                     dynamic_pointer_cast<AST::CodeBlock>($9.node)));
+    }
     | For Dim Id '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
     ;

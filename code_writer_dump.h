@@ -44,8 +44,10 @@ public:
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) override;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) override;
     virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) override;
+    virtual void visitForStatement(std::shared_ptr<const AST::ForStatement> node) override;
     virtual void visitIDivExpression(std::shared_ptr<const AST::IDivExpression> node) override;
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) override;
+    virtual void visitInitializeStatement(std::shared_ptr<const AST::InitializeStatement> node) override;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) override;
     virtual void visitModExpression(std::shared_ptr<const AST::ModExpression> node) override;
     virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) override;

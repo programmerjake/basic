@@ -1,5 +1,6 @@
 #include "code_writer_c.h"
 #include "string_cast.h"
+#include <unordered_set>
 
 using namespace std;
 
@@ -867,16 +868,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
     for(shared_ptr<AST::Statement> statement : node->statements)
     {
         canSkipSemicolon = false;
-        if(dynamic_cast<const AST::Variable *>(statement.get()) != nullptr)
-        {
-            isInitialization = true;
-            statement->writeCode(*this);
-            isInitialization = false;
-        }
-        else
-        {
-            statement->writeCode(*this);
-        }
+        statement->writeCode(*this);
         if(!canSkipSemicolon)
         {
             os() << ";\n";
@@ -1020,6 +1012,70 @@ void CodeWriterC::visitFDivExpression(shared_ptr<const AST::FDivExpression> node
     }
 }
 
+void CodeWriterC::visitForStatement(shared_ptr<const AST::ForStatement> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    string variableRefTemp = makeTempVariable();
+    string endTemp = makeTempVariable();
+    string stepTemp = makeTempVariable();
+    string isFirstTemp = makeTempVariable();
+    declarationTypeAfterVariable = "";
+    node->variable->type()->writeCode(*this);
+    os() << " " << variableRefTemp << declarationTypeAfterVariable << ";\n" << indent;
+    didIndent = true;
+    declarationTypeAfterVariable = "";
+    node->end->type()->writeCode(*this);
+    os() << " " << endTemp << declarationTypeAfterVariable << ";\n" << indent;
+    didIndent = true;
+    declarationTypeAfterVariable = "";
+    node->step->type()->writeCode(*this);
+    os() << " " << stepTemp << declarationTypeAfterVariable << ";\n";
+    didIndent = true;
+    os() << indent << "bool " << isFirstTemp << " = true;\n";
+    os() << indent << variableRefTemp << " = (";
+    node->variable->writeCode(*this);
+    os() << ");\n";
+    didIndent = true;
+    os() << indent << "*" << variableRefTemp << " = (";
+    node->start->writeCode(*this);
+    os() << ");\n";
+    os() << indent << "for(;;)\n";
+    os() << indent << "{\n";
+    indent.depth++;
+    didIndent = true;
+    os() << indent << endTemp << " = (";
+    node->end->writeCode(*this);
+    os() << ");\n";
+    didIndent = true;
+    os() << indent << stepTemp << " = (";
+    node->step->writeCode(*this);
+    os() << ");\n";
+    os() << indent << "if(" << isFirstTemp << ")\n";
+    indent.depth++;
+    os() << indent << isFirstTemp << " = false;\n";
+    indent.depth--;
+    os() << indent << "else\n";
+    indent.depth++;
+    os() << indent << "*" << variableRefTemp << " += " << stepTemp << ";\n";
+    indent.depth--;
+    os() << indent << "if(" << stepTemp << " < 0 && *" << variableRefTemp << " < " << endTemp << ")\n";
+    indent.depth++;
+    os() << indent << "break;\n";
+    indent.depth--;
+    os() << indent << "if(" << stepTemp << " > 0 && *" << variableRefTemp << " > " << endTemp << ")\n";
+    indent.depth++;
+    os() << indent << "break;\n";
+    indent.depth--;
+    didIndent = false;
+    node->body->writeCode(*this);
+    indent.depth--;
+    os() << indent << "}\n";
+    didIndent = false;
+    canSkipSemicolon = true;
+}
+
 void CodeWriterC::visitIDivExpression(shared_ptr<const AST::IDivExpression> node)
 {
     if(!didIndent)
@@ -1060,6 +1116,13 @@ void CodeWriterC::visitIfStatement(shared_ptr<const AST::IfStatement> node)
         didIndent = false;
         node->elseSection->writeCode(*this);
     }
+}
+
+void CodeWriterC::visitInitializeStatement(shared_ptr<const AST::InitializeStatement> node)
+{
+    isInitialization = true;
+    node->variable->writeCode(*this);
+    isInitialization = false;
 }
 
 void CodeWriterC::visitIntegerLiteralExpression(shared_ptr<const AST::IntegerLiteralExpression> node)
