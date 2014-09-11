@@ -29,6 +29,7 @@ enum class TokenType : std::int_fast32_t
 
     TTAbs,
     TTAnd,
+    TTArray,
     TTAs,
     TTAsc,
     TTATn,
@@ -88,6 +89,7 @@ enum class TokenType : std::int_fast32_t
     TTNext,
     TTNot,
     TTOct,
+    TTOf,
     TTOr,
     TTPointer,
     TTRight,
@@ -484,6 +486,7 @@ class Tokenizer final
         {
             {L"Abs", TokenType::TTAbs},
             {L"And", TokenType::TTAnd},
+            {L"Array", TokenType::TTArray},
             {L"As", TokenType::TTAs},
             {L"Asc", TokenType::TTAsc},
             {L"ATn", TokenType::TTATn},
@@ -544,6 +547,7 @@ class Tokenizer final
             {L"Next", TokenType::TTNext},
             {L"Not", TokenType::TTNot},
             {L"Oct", TokenType::TTOct},
+            {L"Of", TokenType::TTOf},
             {L"Or", TokenType::TTOr},
             {L"Pointer", TokenType::TTPointer},
             {L"Right", TokenType::TTRight},

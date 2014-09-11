@@ -110,6 +110,7 @@ shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is);
 %token LogicalNE
 %token Abs
 %token And
+%token Array
 %token As
 %token Asc
 %token ATn
@@ -169,6 +170,7 @@ shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is);
 %token Next
 %token Not
 %token Oct
+%token Of
 %token Or
 %token Pointer
 %token Right
@@ -699,6 +701,9 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     | UInt64  {$$ = ParserValueType(AST::TypeUInt64::getInstance());}
     | ByRef type {$$ = ParserValueType(AST::TypeReference::make($1.token.location, dynamic_pointer_cast<const AST::Type>($2.node)->toRValue()));}
     | ByVal type {$$ = ParserValueType(dynamic_pointer_cast<const AST::Type>($2.node)->toRValue());}
+    | Array Of type {handleErrorNotImplemented($1.token);}
+    | Array '(' IntegerLiteral ')' Of type {handleErrorNotImplemented($1.token);}
+    | Array '(' IntegerLiteral To IntegerLiteral ')' Of type {handleErrorNotImplemented($1.token);}
     | Function '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented($1.token.location, L"Function type");}
     | Sub '(' fn_decl_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Sub type");}
     | TypeOf '(' expression ')' {$$ = ParserValueType(dynamic_pointer_cast<AST::Expression>($3.node)->type()->toRValue());}
