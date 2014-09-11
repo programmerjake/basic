@@ -32,5 +32,6 @@
 #include "ast/builtin_function.h"
 #include "ast/initialize_statement.h"
 #include "ast/for_statement.h"
+#include "ast/type_array.h"
 
 #endif // ALL_H_INCLUDED

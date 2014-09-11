@@ -66,6 +66,7 @@
 		<Unit filename="ast/sub_expression.h" />
 		<Unit filename="ast/symbol_table.h" />
 		<Unit filename="ast/type.h" />
+		<Unit filename="ast/type_array.h" />
 		<Unit filename="ast/type_builtin.cpp" />
 		<Unit filename="ast/type_builtin.h" />
 		<Unit filename="ast/type_reference.h" />
