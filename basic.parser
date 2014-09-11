@@ -242,30 +242,9 @@ declarationPartList: declarationPart {$$ = $1;}
     | declarationPartList ',' declarationPart {$$ = $1; $$.nodes.insert($$.nodes.end(), $3.nodes.begin(), $3.nodes.end());}
     ;
 
-declarationPart: Id '=' expression
+declarationPart: declarationPartWithInitializer
     {
-        shared_ptr<AST::Expression> rhs = dynamic_pointer_cast<AST::Expression>($3.node);
-        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>(rhs->type()->toRValue());
-        wstring name = $1.token.svalue;
-        Location location = $1.token.location;
-        shared_ptr<AST::Variable> variable;
-        AST::Symbol::Type stype;
-        if(type->isLValue())
-        {
-            handleErrorNotImplemented(location, L"ByRef variable");
-        }
-        else
-        {
-            type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name, rhs);
-            stype = AST::Symbol::Type::AutoVariable;
-        }
-        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
-        assert(!sts.empty());
-        if(sts.back()->exists(name))
-            ::handleError(location, name + L" already defined");
-        sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{AST::InitializeStatement::make(variable)});
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});
     }
     | Id As type
     {
@@ -291,6 +270,33 @@ declarationPart: Id '=' expression
         sts.back()->make(AST::Symbol(name, stype, type, variable));
         $$ = ParserValueType(vector<shared_ptr<AST::Base>>{AST::InitializeStatement::make(variable)});
     }
+    ;
+
+declarationPartWithInitializer: Id '=' expression
+    {
+        shared_ptr<AST::Expression> rhs = dynamic_pointer_cast<AST::Expression>($3.node);
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>(rhs->type()->toRValue());
+        wstring name = $1.token.svalue;
+        Location location = $1.token.location;
+        shared_ptr<AST::Variable> variable;
+        AST::Symbol::Type stype;
+        if(type->isLValue())
+        {
+            handleErrorNotImplemented(location, L"ByRef variable");
+        }
+        else
+        {
+            type = AST::TypeReference::make(location, type);
+            variable = AST::AutoVariable::make(location, type, name, rhs);
+            stype = AST::Symbol::Type::AutoVariable;
+        }
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+            ::handleError(location, name + L" already defined");
+        sts.back()->make(AST::Symbol(name, stype, type, variable));
+        $$ = ParserValueType(AST::InitializeStatement::make(variable));
+    }
     | Id As type '=' expression
     {
         shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
@@ -315,7 +321,7 @@ declarationPart: Id '=' expression
         if(sts.back()->exists(name))
             ::handleError(location, name + L" already defined");
         sts.back()->make(AST::Symbol(name, stype, type, variable));
-        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{AST::InitializeStatement::make(variable)});
+        $$ = ParserValueType(AST::InitializeStatement::make(variable));
     }
     ;
 
@@ -411,8 +417,43 @@ statement: ifStatement {$$ = $1;}
                                                      dynamic_pointer_cast<AST::Expression>($8.node),
                                                      dynamic_pointer_cast<AST::CodeBlock>($9.node)));
     }
-    | For Dim Id '=' expression To expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
-    | For Dim Id '=' expression To expression Step expression codeBlockWithNewLine Next {handleErrorNotImplemented($1.token);}
+    | forDim declarationPartWithInitializer To expression codeBlockWithNewLine Next
+    {
+        shared_ptr<AST::InitializeStatement> initializer = dynamic_pointer_cast<AST::InitializeStatement>($2.node);
+        shared_ptr<AST::Variable> variable = initializer->variable;
+        shared_ptr<AST::Expression> start = variable->initializer();
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        shared_ptr<AST::ForStatement> forStatement = AST::ForStatement::make($1.token.location,
+                                                     variable,
+                                                     start,
+                                                     dynamic_pointer_cast<AST::Expression>($4.node),
+                                                     nullptr,
+                                                     dynamic_pointer_cast<AST::CodeBlock>($5.node));
+        shared_ptr<AST::CodeBlock> block = AST::CodeBlock::make($1.token.location, sts.back(), vector<shared_ptr<AST::Statement>>{forStatement});
+        sts.pop_back();
+        $$ = ParserValueType(block);
+    }
+    | forDim declarationPartWithInitializer To expression Step expression codeBlockWithNewLine Next
+    {
+        shared_ptr<AST::InitializeStatement> initializer = dynamic_pointer_cast<AST::InitializeStatement>($2.node);
+        shared_ptr<AST::Variable> variable = initializer->variable;
+        shared_ptr<AST::Expression> start = variable->initializer();
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        shared_ptr<AST::ForStatement> forStatement = AST::ForStatement::make($1.token.location,
+                                                     variable,
+                                                     start,
+                                                     dynamic_pointer_cast<AST::Expression>($4.node),
+                                                     dynamic_pointer_cast<AST::Expression>($6.node),
+                                                     dynamic_pointer_cast<AST::CodeBlock>($7.node));
+        shared_ptr<AST::CodeBlock> block = AST::CodeBlock::make($1.token.location, sts.back(), vector<shared_ptr<AST::Statement>>{forStatement});
+        sts.pop_back();
+        $$ = ParserValueType(block);
+    }
+    ;
+
+forDim: For Dim {$$ = $1; getSymbolTableStack(this).push_back(AST::SymbolTable::make());}
     ;
 
 inlineStatement: expression_no_equals '=' expression {$$ = ParserValueType(AST::AssignStatement::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
