@@ -34,16 +34,66 @@ void CodeWriterC::visitAndExpression(shared_ptr<const AST::AndExpression> node)
     }
 }
 
+void CodeWriterC::visitArrayIndexExpression(shared_ptr<const AST::ArrayIndexExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "(";
+    assert(node->args().size() >= 2);
+    string seperator = "", nextSeperator = ")->at(";
+    for(shared_ptr<AST::Expression> e : node->args())
+    {
+        os() << seperator;
+        e->writeCode(*this);
+        seperator = nextSeperator;
+        nextSeperator = ", ";
+    }
+    os() << ")";
+}
+
 void CodeWriterC::visitAssignStatement(shared_ptr<const AST::AssignStatement> node)
 {
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "*(";
-    node->lhs->writeCode(*this);
-    os() << ") = (";
-    node->rhs->writeCode(*this);
-    os() << ")";
+    if(AST::BuiltInFunctionExpression::isMidFunction(node->lhs))
+    {
+        shared_ptr<const AST::BuiltInFunctionExpression> fn = dynamic_pointer_cast<const AST::BuiltInFunctionExpression>(node->lhs);
+        switch(fn->fnType())
+        {
+        case AST::BuiltInFunctionExpression::FnType::Mid2:
+            os() << "(";
+            fn->args()[0]->writeCode(*this);
+            os() << ")->replace((size_t)(";
+            fn->args()[1]->writeCode(*this);
+            os() << ") - 1, wstring::npos, ";
+            node->rhs->writeCode(*this);
+            os() << ")";
+            break;
+        case AST::BuiltInFunctionExpression::FnType::Mid3:
+            os() << "(";
+            fn->args()[0]->writeCode(*this);
+            os() << ")->replace((size_t)(";
+            fn->args()[1]->writeCode(*this);
+            os() << ") - 1, (size_t)(";
+            fn->args()[2]->writeCode(*this);
+            os() << "), ";
+            node->rhs->writeCode(*this);
+            os() << ")";
+            break;
+        default:
+            assert(false);
+        }
+    }
+    else
+    {
+        os() << "*(";
+        node->lhs->writeCode(*this);
+        os() << ") = (";
+        node->rhs->writeCode(*this);
+        os() << ")";
+    }
 }
 
 void CodeWriterC::visitAutoVariable(shared_ptr<const AST::AutoVariable> node)
@@ -64,15 +114,15 @@ void CodeWriterC::visitAutoVariable(shared_ptr<const AST::AutoVariable> node)
         if(!didIndent)
             os() << indent;
         didIndent = true;
+        os() << string_cast<string>(createVariableName(node->name()));
+        os() << " = (";
+        isInitialization = false;
         if(node->initializer() != nullptr)
-        {
-            os() << string_cast<string>(createVariableName(node->name()));
-            os() << " = (";
-            isInitialization = false;
             node->initializer()->writeCode(*this);
-            isInitialization = true;
-            os() << ")";
-        }
+        else
+            writeInitializer(node);
+        isInitialization = true;
+        os() << ")";
         didIndent = false;
     }
     else
@@ -188,9 +238,23 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         os() << ")";
         return;
     case AST::BuiltInFunctionExpression::FnType::LBound1:
-        throw logic_error("LBound not implemented");
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << "(";
+        node->args()[0]->writeCode(*this);
+        os() << ").lbound(1L)";
+        return;
     case AST::BuiltInFunctionExpression::FnType::LBound2:
-        throw logic_error("LBound not implemented");
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << "(";
+        node->args()[0]->writeCode(*this);
+        os() << ").lbound(";
+        node->args()[1]->writeCode(*this);
+        os() << ")";
+        return;
     case AST::BuiltInFunctionExpression::FnType::LCase:
         if(!didIndent)
             os() << indent;
@@ -237,23 +301,29 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         if(!didIndent)
             os() << indent;
         didIndent = true;
-        os() << "fn_Mid(";
+        os() << "(";
         node->args()[0]->writeCode(*this);
-        os() << ", ";
+        if(node->args()[0]->type()->isLValue())
+            os() << ")->substr((size_t)(";
+        else
+            os() << ").substr((size_t)(";
         node->args()[1]->writeCode(*this);
-        os() << ")";
+        os() << ") - 1)";
         return;
     case AST::BuiltInFunctionExpression::FnType::Mid3:
         if(!didIndent)
             os() << indent;
         didIndent = true;
-        os() << "fn_Mid(";
+        os() << "(";
         node->args()[0]->writeCode(*this);
-        os() << ", ";
+        if(node->args()[0]->type()->isLValue())
+            os() << ")->substr((size_t)(";
+        else
+            os() << ").substr((size_t)(";
         node->args()[1]->writeCode(*this);
-        os() << ", ";
+        os() << ") - 1, (size_t)(";
         node->args()[2]->writeCode(*this);
-        os() << ")";
+        os() << "))";
         return;
     case AST::BuiltInFunctionExpression::FnType::Oct:
         if(!didIndent)
@@ -340,9 +410,23 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         os() << ")";
         return;
     case AST::BuiltInFunctionExpression::FnType::UBound1:
-        throw logic_error("UBound not implemented");
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << "(";
+        node->args()[0]->writeCode(*this);
+        os() << ").ubound(1L)";
+        return;
     case AST::BuiltInFunctionExpression::FnType::UBound2:
-        throw logic_error("UBound not implemented");
+        if(!didIndent)
+            os() << indent;
+        didIndent = true;
+        os() << "(";
+        node->args()[0]->writeCode(*this);
+        os() << ").ubound(";
+        node->args()[1]->writeCode(*this);
+        os() << ")";
+        return;
     case AST::BuiltInFunctionExpression::FnType::UCase:
         if(!didIndent)
             os() << indent;
@@ -369,10 +453,13 @@ void CodeWriterC::visitCastExpression(shared_ptr<const AST::CastExpression> node
         os() << indent;
     didIndent = true;
     shared_ptr<AST::Expression> e = node->args().front();
-    os() << "(";
-    node->type()->toRValue()->writeCode(*this);
-    os() << ")";
-    if(e->type()->isLValue())
+    if(*node->type() != *e->type() && *node->type() != *e->type()->toRValue())
+    {
+        os() << "(";
+        node->type()->writeCode(*this);
+        os() << ")";
+    }
+    if(e->type()->isLValue() && !node->type()->isLValue())
         os() << "*";
     os() << "(";
     e->writeCode(*this);
@@ -393,6 +480,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "#include <sstream>\n";
         os() << indent << "#include <cstdint>\n";
         os() << indent << "#include <tuple>\n";
+        os() << indent << "#include <memory>\n";
         os() << indent << "\n";
         os() << indent << "using namespace std;\n";
         os() << indent << "\n";
@@ -588,73 +676,6 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "struct fn_Mid final\n";
-        os() << indent << "{\n";
-        indent.depth++;
-        os() << indent << "wstring str;\n";
-        os() << indent << "wstring *pstr;\n";
-        os() << indent << "size_t start;\n";
-        os() << indent << "size_t length;\n";
-        os() << indent << "fn_Mid(wstring str, long start)\n";
-        indent.depth++;
-        os() << indent << ": str(str), pstr(&this->str), start(start - 1), length(wstring::npos)\n";
-        indent.depth--;
-        os() << indent << "{\n";
-        os() << indent << "}\n";
-        os() << indent << "fn_Mid(wstring str, long start, long count)\n";
-        indent.depth++;
-        os() << indent << ": str(str), pstr(&this->str), start(start - 1), length(count)\n";
-        indent.depth--;
-        os() << indent << "{\n";
-        os() << indent << "}\n";
-        os() << indent << "fn_Mid(wstring *pstr, long start)\n";
-        indent.depth++;
-        os() << indent << ": str(), pstr(pstr), start(start - 1), length(wstring::npos)\n";
-        indent.depth--;
-        os() << indent << "{\n";
-        os() << indent << "}\n";
-        os() << indent << "fn_Mid(wstring *pstr, long start, long count)\n";
-        indent.depth++;
-        os() << indent << ": str(), pstr(pstr), start(start - 1), length(count)\n";
-        indent.depth--;
-        os() << indent << "{\n";
-        os() << indent << "}\n";
-        os() << indent << "struct ref final\n";
-        os() << indent << "{\n";
-        indent.depth++;
-        os() << indent << "wstring str;\n";
-        os() << indent << "wstring *pstr;\n";
-        os() << indent << "size_t start;\n";
-        os() << indent << "size_t length;\n";
-        os() << indent << "ref(const wstring &str, wstring *pstr, size_t start, size_t length)\n";
-        indent.depth++;
-        os() << indent << ": str(str), pstr(pstr == &str ? &this->str : pstr), start(start), length(length)\n";
-        indent.depth--;
-        os() << indent << "{\n";
-        os() << indent << "}\n";
-        os() << indent << "void operator =(wstring s) const\n";
-        os() << indent << "{\n";
-        indent.depth++;
-        os() << indent << "pstr->replace(start, length, s);\n";
-        indent.depth--;
-        os() << indent << "}\n";
-        os() << indent << "operator wstring() const\n";
-        os() << indent << "{\n";
-        indent.depth++;
-        os() << indent << "return pstr->substr(start, length);\n";
-        indent.depth--;
-        os() << indent << "}\n";
-        indent.depth--;
-        os() << indent << "};\n";
-        os() << indent << "ref operator *() const\n";
-        os() << indent << "{\n";
-        indent.depth++;
-        os() << indent << "return ref(str, pstr, start, length);\n";
-        indent.depth--;
-        os() << indent << "}\n";
-        indent.depth--;
-        os() << indent << "};\n";
-        os() << indent << "\n";
         os() << indent << "inline bool iswodigit(wint_t ch)\n";
         os() << indent << "{\n";
         indent.depth++;
@@ -842,9 +863,42 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "T *elements;\n";
         os() << indent << "long base[N];\n";
         os() << indent << "size_t size[N];\n";
+        os() << indent << "template <typename ...Args>\n";
+        os() << indent << "ArrayDescriptor(T *elements, Args... args)\n";
+        indent.depth++;
+        os() << indent << ": ArrayDescriptor(args...), elements(elements)\n";
+        indent.depth--;
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "static_assert(sizeof...(args) == 2 * N, \"array index count doesn't match\");\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "~ArrayDescriptor()\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "delete []elements;\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "ArrayDescriptor(const ArrayDescriptor &) = delete;\n";
+        os() << indent << "void operator =(const ArrayDescriptor &) = delete;\n";
         indent.depth--;
         os() << indent << "private:\n";
         indent.depth++;
+        os() << indent << "template <typename ...Args>\n";
+        os() << indent << "ArrayDescriptor(long base, size_t size, Args... args)\n";
+        indent.depth++;
+        os() << indent << ": ArrayDescriptor(args...)\n";
+        indent.depth--;
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "constexpr size_t indexNumber = N - (sizeof...(args) / 2 + 1);\n";
+        os() << indent << "this->base[indexNumber] = base;\n";
+        os() << indent << "this->size[indexNumber] = size;\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "ArrayDescriptor()\n";
+        os() << indent << "{\n";
+        os() << indent << "}\n";
         os() << indent << "constexpr size_t arrayIndexSize(size_t indexNumber) const\n";
         os() << indent << "{\n";
         indent.depth++;
@@ -876,6 +930,20 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth++;
         os() << indent << "static_assert(sizeof...(args) == N, \"incorrect argument count for array\");\n";
         os() << indent << "return atHelper(args...);\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "inline long lbound(long index) const\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "assert(index >= 1 && index <= (long)N);\n";
+        os() << indent << "return base[index - 1];\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "inline long ubound(long index) const\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "assert(index >= 1 && index <= (long)N);\n";
+        os() << indent << "return base[index - 1] + size[index - 1] - 1;\n";
         indent.depth--;
         os() << indent << "}\n";
         indent.depth--;
@@ -1312,14 +1380,14 @@ void CodeWriterC::visitStaticVariable(shared_ptr<const AST::StaticVariable> node
         os() << "static ";
         node->type()->toRValue()->writeCode(*this);
         os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        os() << " = (";
+        isDeclaration = false;
         if(node->initializer() != nullptr)
-        {
-            os() << " = (";
-            isDeclaration = false;
             node->initializer()->writeCode(*this);
-            isDeclaration = true;
-            os() << ")";
-        }
+        else
+            writeInitializer(node);
+        isDeclaration = true;
+        os() << ")";
         didIndent = false;
     }
     else
@@ -1434,9 +1502,47 @@ void CodeWriterC::visitTypeArray(shared_ptr<const AST::TypeArray> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "const ArrayDescriptor<";
+    if(isInitializer)
+    {
+        isInitializer = false;
+        os() << "shared_ptr<const ArrayDescriptor<";
+        node->elementType()->writeCode(*this);
+        os() << ", " << node->indexRanges().size() << "> >(";
+        if(node->isTotallySpecified())
+        {
+            os() << "new ArrayDescriptor<";
+            node->elementType()->writeCode(*this);
+            os() << ", " << node->indexRanges().size() << ">(";
+            int64_t size = node->elementCount();
+            if(size <= 0)
+            {
+                os() << "nullptr";
+            }
+            else
+            {
+                declarationTypeAfterVariable = "";
+                isDeclaration = true;
+                os() << "new (";
+                node->elementType()->writeCode(*this);
+                isDeclaration = false;
+                os() << "[" << size << "]" << declarationTypeAfterVariable << ")";
+            }
+            for(AST::TypeArray::IndexRange ir : node->indexRanges())
+            {
+                os() << ", " << std::get<0>(ir) << ", " << AST::TypeArray::getRangeSize(ir);
+            }
+            os() << "))";
+        }
+        else
+        {
+            os() << "nullptr)";
+        }
+        isInitializer = true;
+        return;
+    }
+    os() << "shared_ptr<const ArrayDescriptor<";
     node->elementType()->writeCode(*this);
-    os() << ", " << node->indexRanges().size() << "> *";
+    os() << ", " << node->indexRanges().size() << "> >";
 }
 
 void CodeWriterC::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)
@@ -1444,7 +1550,10 @@ void CodeWriterC::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "bool";
+    if(isInitializer)
+        os() << "false";
+    else
+        os() << "bool";
 }
 
 void CodeWriterC::visitTypeDouble(shared_ptr<const AST::TypeDouble> node)
@@ -1452,7 +1561,10 @@ void CodeWriterC::visitTypeDouble(shared_ptr<const AST::TypeDouble> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "double";
+    if(isInitializer)
+        os() << "0.0";
+    else
+        os() << "double";
 }
 
 void CodeWriterC::visitTypeInt16(shared_ptr<const AST::TypeInt16> node)
@@ -1460,7 +1572,10 @@ void CodeWriterC::visitTypeInt16(shared_ptr<const AST::TypeInt16> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "int16_t";
+    if(isInitializer)
+        os() << "(int16_t)0";
+    else
+        os() << "int16_t";
 }
 
 void CodeWriterC::visitTypeInt32(shared_ptr<const AST::TypeInt32> node)
@@ -1468,7 +1583,10 @@ void CodeWriterC::visitTypeInt32(shared_ptr<const AST::TypeInt32> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "int32_t";
+    if(isInitializer)
+        os() << "(int32_t)0";
+    else
+        os() << "int32_t";
 }
 
 void CodeWriterC::visitTypeInt64(shared_ptr<const AST::TypeInt64> node)
@@ -1476,7 +1594,10 @@ void CodeWriterC::visitTypeInt64(shared_ptr<const AST::TypeInt64> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "int64_t";
+    if(isInitializer)
+        os() << "(int64_t)0";
+    else
+        os() << "int64_t";
 }
 
 void CodeWriterC::visitTypeInt8(shared_ptr<const AST::TypeInt8> node)
@@ -1484,7 +1605,10 @@ void CodeWriterC::visitTypeInt8(shared_ptr<const AST::TypeInt8> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "int8_t";
+    if(isInitializer)
+        os() << "(int8_t)0";
+    else
+        os() << "int8_t";
 }
 
 void CodeWriterC::visitTypeInteger(shared_ptr<const AST::TypeInteger> node)
@@ -1492,7 +1616,10 @@ void CodeWriterC::visitTypeInteger(shared_ptr<const AST::TypeInteger> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "long";
+    if(isInitializer)
+        os() << "0L";
+    else
+        os() << "long";
 }
 
 void CodeWriterC::visitTypeReference(shared_ptr<const AST::TypeReference> node)
@@ -1501,6 +1628,7 @@ void CodeWriterC::visitTypeReference(shared_ptr<const AST::TypeReference> node)
         os() << indent;
     didIndent = true;
     node->toRValue()->writeCode(*this);
+    assert(!isInitializer);
     os() << " *";
 }
 
@@ -1509,7 +1637,10 @@ void CodeWriterC::visitTypeSingle(shared_ptr<const AST::TypeSingle> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "float";
+    if(isInitializer)
+        os() << "0.0f";
+    else
+        os() << "float";
 }
 
 void CodeWriterC::visitTypeString(shared_ptr<const AST::TypeString> node)
@@ -1517,7 +1648,10 @@ void CodeWriterC::visitTypeString(shared_ptr<const AST::TypeString> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "wstring";
+    if(isInitializer)
+        os() << "wstring(L\"\")";
+    else
+        os() << "wstring";
 }
 
 void CodeWriterC::visitTypeUInt16(shared_ptr<const AST::TypeUInt16> node)
@@ -1525,7 +1659,10 @@ void CodeWriterC::visitTypeUInt16(shared_ptr<const AST::TypeUInt16> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "uint16_t";
+    if(isInitializer)
+        os() << "(uint16_t)0";
+    else
+        os() << "uint16_t";
 }
 
 void CodeWriterC::visitTypeUInt32(shared_ptr<const AST::TypeUInt32> node)
@@ -1533,7 +1670,10 @@ void CodeWriterC::visitTypeUInt32(shared_ptr<const AST::TypeUInt32> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "uint32_t";
+    if(isInitializer)
+        os() << "(uint32_t)0";
+    else
+        os() << "uint32_t";
 }
 
 void CodeWriterC::visitTypeUInt64(shared_ptr<const AST::TypeUInt64> node)
@@ -1541,7 +1681,10 @@ void CodeWriterC::visitTypeUInt64(shared_ptr<const AST::TypeUInt64> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "uint64_t";
+    if(isInitializer)
+        os() << "(uint64_t)0";
+    else
+        os() << "uint64_t";
 }
 
 void CodeWriterC::visitTypeUInt8(shared_ptr<const AST::TypeUInt8> node)
@@ -1549,7 +1692,10 @@ void CodeWriterC::visitTypeUInt8(shared_ptr<const AST::TypeUInt8> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
-    os() << "uint8_t";
+    if(isInitializer)
+        os() << "(uint8_t)0";
+    else
+        os() << "uint8_t";
 }
 
 void CodeWriterC::visitUnaryPlusExpression(shared_ptr<const AST::UnaryPlusExpression> node)
@@ -1593,4 +1739,12 @@ void CodeWriterC::visitXorExpression(shared_ptr<const AST::XorExpression> node)
 void CodeWriterC::finish()
 {
     sourceStream = nullptr;
+}
+
+void CodeWriterC::writeInitializer(std::shared_ptr<const AST::Variable> node)
+{
+    assert(dynamic_cast<const AST::ReferenceVariable *>(node.get()) == nullptr);
+    isInitializer = true;
+    node->type()->toRValue()->writeCode(*this);
+    isInitializer = false;
 }

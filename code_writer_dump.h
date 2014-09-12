@@ -34,6 +34,7 @@ public:
     }
     virtual void visitAddExpression(std::shared_ptr<const AST::AddExpression> node) override;
     virtual void visitAndExpression(std::shared_ptr<const AST::AndExpression> node) override;
+    virtual void visitArrayIndexExpression(std::shared_ptr<const AST::ArrayIndexExpression> node) override;
     virtual void visitAssignStatement(std::shared_ptr<const AST::AssignStatement> node) override;
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) override;
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) override;

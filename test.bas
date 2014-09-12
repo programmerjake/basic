@@ -1,1 +1,2 @@
-Dim A As Array Of Integer, B As Array(,) Of Single
+Dim A As String = "Hello abc." + Chr(10)
+Mid(A, 7, 3) = "def"

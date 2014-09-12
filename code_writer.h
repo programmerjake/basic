@@ -17,6 +17,7 @@ public:
     }
     virtual void visitAddExpression(std::shared_ptr<const AST::AddExpression> node) = 0;
     virtual void visitAndExpression(std::shared_ptr<const AST::AndExpression> node) = 0;
+    virtual void visitArrayIndexExpression(std::shared_ptr<const AST::ArrayIndexExpression> node) = 0;
     virtual void visitAssignStatement(std::shared_ptr<const AST::AssignStatement> node) = 0;
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) = 0;
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) = 0;

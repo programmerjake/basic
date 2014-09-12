@@ -45,6 +45,10 @@ public:
     {
         return type->isIntegralType();
     }
+    virtual bool isNumericType() const override
+    {
+        return type->isNumericType();
+    }
     virtual std::shared_ptr<const Type> getBaseType() const override
     {
         return type->getBaseType();

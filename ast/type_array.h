@@ -16,11 +16,15 @@ class TypeArray final : public Type
 {
 public:
     typedef std::pair<std::int64_t, std::int64_t> IndexRange;
-    static constexpr IndexRange defaultEmptyRange = IndexRange(1, 0); // definition in type_builtin.cpp
+    static constexpr IndexRange defaultEmptyRange = IndexRange(2, 0); // definition in type_builtin.cpp
     static constexpr std::int64_t defaultRangeStart = 1; // definition in type_builtin.cpp
+    static constexpr std::int64_t getRangeSize(IndexRange ir)
+    {
+        return std::get<1>(ir) - std::get<0>(ir) + 1;
+    }
     static constexpr bool isEmptyRange(IndexRange ir)
     {
-        return std::get<0>(ir) > std::get<1>(ir);
+        return getRangeSize(ir) < 0;
     }
 private:
     std::shared_ptr<const Type> elementType_;
@@ -49,6 +53,26 @@ public:
     const std::vector<IndexRange> &indexRanges() const
     {
         return indexRanges_;
+    }
+    bool isTotallySpecified() const
+    {
+        for(IndexRange ir : indexRanges())
+        {
+            if(isEmptyRange(ir))
+                return false;
+        }
+        return true;
+    }
+    int64_t elementCount() const
+    {
+        int64_t retval = 1;
+        for(IndexRange ir : indexRanges())
+        {
+            if(isEmptyRange(ir))
+                return 0;
+            retval *= getRangeSize(ir);
+        }
+        return retval;
     }
     static std::shared_ptr<TypeArray> make(Location location, std::shared_ptr<const Type> elementType, std::vector<IndexRange> indexRanges)
     {

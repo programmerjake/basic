@@ -640,8 +640,23 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Exp '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Exp, dynamic_pointer_cast<AST::Expression>($3.node)));}
     | Hex '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Hex, dynamic_pointer_cast<AST::Expression>($3.node)));}
     | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError($1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
-    | toplevel_expression '[' expression ']' {handleErrorNotImplemented($2.token.location, L"array index");}
-    | toplevel_expression '(' fn_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Function call");}
+    | toplevel_expression '(' expression_list ')'
+    {
+        vector<shared_ptr<AST::Expression>> expression_list;
+        expression_list.reserve($3.nodes.size());
+        for(shared_ptr<AST::Base> e : $3.nodes)
+        {
+            expression_list.push_back(dynamic_pointer_cast<AST::Expression>(e));
+        }
+        if(dynamic_cast<const AST::TypeArray *>(dynamic_pointer_cast<AST::Expression>($1.node)->type()->getAbsoluteBaseType().get()) != nullptr)
+        {
+            $$ = ParserValueType(AST::ArrayIndexExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), expression_list));
+        }
+        else
+        {
+            handleErrorNotImplemented($2.token.location, L"Function call");
+        }
+    }
     | InStr '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
     | InStr '(' expression ',' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr3, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<AST::Expression>($7.node)));}
     | LBound '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::LBound1, dynamic_pointer_cast<AST::Expression>($3.node)));}
@@ -669,12 +684,12 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Val '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Val, dynamic_pointer_cast<AST::Expression>($3.node)));}
     ;
 
-fn_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
-    | fn_arg_list_non_empty {$$ = $1;}
+expression_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
+    | expression_list_non_empty {$$ = $1;}
     ;
 
-fn_arg_list_non_empty: expression {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
-    | fn_arg_list_non_empty ',' expression {$$ = $1; $$.nodes.push_back($3.node);}
+expression_list_non_empty: expression {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
+    | expression_list_non_empty ',' expression {$$ = $1; $$.nodes.push_back($3.node);}
     ;
 
 fn_decl_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
@@ -716,27 +731,48 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::Type) ::handleError($1.token.location, $1.token.svalue + L" is not a type"); $$ = ParserValueType(symbol.value);}
     ;
 
+signedIntegerLiteral: IntegerLiteral
+    {
+        $$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue, ::handleError));
+    }
+    | '+' IntegerLiteral
+    {
+        $$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue, ::handleError));
+    }
+    | '-' IntegerLiteral
+    {
+        $$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, L"-" + $2.token.svalue, ::handleError));
+    }
+    ;
+
+
 arrayIndexRanges:
     {
         $$ = ParserValueType(AST::TypeArray::make(peekToken.token.location, AST::TypeInteger::getInstance(), vector<AST::TypeArray::IndexRange>{AST::TypeArray::defaultEmptyRange}));
     }
-    | IntegerLiteral
+    | signedIntegerLiteral
     {
-        int64_t end;
-        shared_ptr<AST::IntegerLiteralExpression> endNode = AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue, ::handleError);
+        int64_t end, start = AST::TypeArray::defaultRangeStart;
+        shared_ptr<AST::IntegerLiteralExpression> endNode = dynamic_pointer_cast<AST::IntegerLiteralExpression>($1.node);
         AST::CastExpression::checkCast(endNode->location(), endNode, AST::TypeInteger::getInstance(), true);
         end = endNode->value;
-        $$ = ParserValueType(AST::TypeArray::make($1.token.location, AST::TypeInteger::getInstance(), vector<AST::TypeArray::IndexRange>{AST::TypeArray::IndexRange(AST::TypeArray::defaultRangeStart, end)}));
+        AST::TypeArray::IndexRange ir = AST::TypeArray::IndexRange(start, end);
+        if(AST::TypeArray::getRangeSize(ir) < 0)
+            throw ParserError(endNode->location(), L"invalid range : size is less than zero");
+        $$ = ParserValueType(AST::TypeArray::make($1.token.location, AST::TypeInteger::getInstance(), vector<AST::TypeArray::IndexRange>{ir}));
     }
-    | IntegerLiteral To IntegerLiteral
+    | signedIntegerLiteral To signedIntegerLiteral
     {
         int64_t start, end;
-        shared_ptr<AST::IntegerLiteralExpression> startNode = AST::IntegerLiteralExpression::make($1.token.location, $1.token.svalue, ::handleError);
+        shared_ptr<AST::IntegerLiteralExpression> startNode = dynamic_pointer_cast<AST::IntegerLiteralExpression>($1.node);
         AST::CastExpression::checkCast(startNode->location(), startNode, AST::TypeInteger::getInstance(), true);
         start = startNode->value;
-        shared_ptr<AST::IntegerLiteralExpression> endNode = AST::IntegerLiteralExpression::make($3.token.location, $3.token.svalue, ::handleError);
+        shared_ptr<AST::IntegerLiteralExpression> endNode = dynamic_pointer_cast<AST::IntegerLiteralExpression>($3.node);
         AST::CastExpression::checkCast(endNode->location(), endNode, AST::TypeInteger::getInstance(), true);
         end = endNode->value;
+        AST::TypeArray::IndexRange ir = AST::TypeArray::IndexRange(start, end);
+        if(AST::TypeArray::getRangeSize(ir) < 0)
+            throw ParserError($2.token.location, L"invalid range : size is less than zero");
         $$ = ParserValueType(AST::TypeArray::make($1.token.location, AST::TypeInteger::getInstance(), vector<AST::TypeArray::IndexRange>{AST::TypeArray::IndexRange(start, end)}));
     }
     | arrayIndexRanges ','
@@ -747,31 +783,37 @@ arrayIndexRanges:
         indexRanges.push_back(AST::TypeArray::defaultEmptyRange);
         $$ = ParserValueType(AST::TypeArray::make(ta->location(), AST::TypeInteger::getInstance(), indexRanges));
     }
-    | arrayIndexRanges ',' IntegerLiteral
+    | arrayIndexRanges ',' signedIntegerLiteral
     {
-        int64_t end;
-        shared_ptr<AST::IntegerLiteralExpression> endNode = AST::IntegerLiteralExpression::make($3.token.location, $3.token.svalue, ::handleError);
+        int64_t end, start = AST::TypeArray::defaultRangeStart;
+        shared_ptr<AST::IntegerLiteralExpression> endNode = dynamic_pointer_cast<AST::IntegerLiteralExpression>($3.node);
         AST::CastExpression::checkCast(endNode->location(), endNode, AST::TypeInteger::getInstance(), true);
         end = endNode->value;
+        AST::TypeArray::IndexRange ir = AST::TypeArray::IndexRange(start, end);
+        if(AST::TypeArray::getRangeSize(ir) < 0)
+            throw ParserError(endNode->location(), L"invalid range : size is less than zero");
         $$ = $1;
         shared_ptr<AST::TypeArray> ta = dynamic_pointer_cast<AST::TypeArray>($$.node);
         vector<AST::TypeArray::IndexRange> indexRanges = ta->indexRanges();
-        indexRanges.push_back(AST::TypeArray::IndexRange(AST::TypeArray::defaultRangeStart, end));
+        indexRanges.push_back(ir);
         $$ = ParserValueType(AST::TypeArray::make(ta->location(), AST::TypeInteger::getInstance(), indexRanges));
     }
-    | arrayIndexRanges ',' IntegerLiteral To IntegerLiteral
+    | arrayIndexRanges ',' signedIntegerLiteral To signedIntegerLiteral
     {
         int64_t start, end;
-        shared_ptr<AST::IntegerLiteralExpression> startNode = AST::IntegerLiteralExpression::make($3.token.location, $3.token.svalue, ::handleError);
+        shared_ptr<AST::IntegerLiteralExpression> startNode = dynamic_pointer_cast<AST::IntegerLiteralExpression>($3.node);
         AST::CastExpression::checkCast(startNode->location(), startNode, AST::TypeInteger::getInstance(), true);
         start = startNode->value;
-        shared_ptr<AST::IntegerLiteralExpression> endNode = AST::IntegerLiteralExpression::make($5.token.location, $5.token.svalue, ::handleError);
+        shared_ptr<AST::IntegerLiteralExpression> endNode = dynamic_pointer_cast<AST::IntegerLiteralExpression>($5.node);
         AST::CastExpression::checkCast(endNode->location(), endNode, AST::TypeInteger::getInstance(), true);
         end = endNode->value;
+        AST::TypeArray::IndexRange ir = AST::TypeArray::IndexRange(start, end);
+        if(AST::TypeArray::getRangeSize(ir) < 0)
+            throw ParserError($4.token.location, L"invalid range : size is less than zero");
         $$ = $1;
         shared_ptr<AST::TypeArray> ta = dynamic_pointer_cast<AST::TypeArray>($$.node);
         vector<AST::TypeArray::IndexRange> indexRanges = ta->indexRanges();
-        indexRanges.push_back(AST::TypeArray::IndexRange(start, end));
+        indexRanges.push_back(ir);
         $$ = ParserValueType(AST::TypeArray::make(ta->location(), AST::TypeInteger::getInstance(), indexRanges));
     }
     ;

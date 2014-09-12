@@ -180,6 +180,24 @@ void SubExpression::calcType()
     throw ParserError(location(), L"invalid argument types for binary -");
 }
 
+void ArrayIndexExpression::calcType()
+{
+    shared_ptr<Expression> &array = argsRef()[0];
+    shared_ptr<const TypeArray> arrayType = dynamic_pointer_cast<const TypeArray>(array->type()->getAbsoluteBaseType());
+    if(arrayType == nullptr)
+        throw ParserError(location(), L"invalid type for array index");
+    array = CastExpression::castImplicit(array, arrayType);
+    if(arrayType->indexRanges().size() + 1 < args().size())
+        throw ParserError(args()[arrayType->indexRanges().size() + 1]->location(), L"too many indexes for array");
+    if(arrayType->indexRanges().size() + 1 > args().size())
+        throw ParserError(location(), L"too few indexes for array");
+    for(size_t i = 1; i < args().size(); i++)
+    {
+        argsRef()[i] = CastExpression::castImplicit(args()[i], TypeInteger::getInstance());
+    }
+    type(TypeReference::toLValue(arrayType->elementType()));
+}
+
 void BuiltInFunctionExpression::calcType()
 {
     switch(fnType())
@@ -277,11 +295,24 @@ void BuiltInFunctionExpression::calcType()
         return;
     }
     case BuiltInFunctionExpression::FnType::LBound1:
-        assert(false);
+    {
+        type(TypeInteger::getInstance());
+        shared_ptr<const TypeArray> typeArray = dynamic_pointer_cast<const TypeArray>(args()[0]->type()->toRValue()->getAbsoluteBaseType());
+        if(typeArray == nullptr)
+            throw ParserError(location(), L"invalid argument type for LBound");
+        argsRef()[0] = CastExpression::castImplicit(args()[0], typeArray);
         return;
+    }
     case BuiltInFunctionExpression::FnType::LBound2:
-        assert(false);
+    {
+        type(TypeInteger::getInstance());
+        shared_ptr<const TypeArray> typeArray = dynamic_pointer_cast<const TypeArray>(args()[0]->type()->toRValue()->getAbsoluteBaseType());
+        if(typeArray == nullptr)
+            throw ParserError(location(), L"invalid argument type for LBound");
+        argsRef()[0] = CastExpression::castImplicit(args()[0], typeArray);
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::LCase:
     {
         type(TypeString::getInstance());
@@ -321,20 +352,16 @@ void BuiltInFunctionExpression::calcType()
     }
     case BuiltInFunctionExpression::FnType::Mid2:
     {
-        type(TypeReference::make(Location(), TypeString::getInstance()));
-        if(*args()[0]->type() == *type())
-            argsRef()[0] = CastExpression::castImplicit(args()[0], type());
-        else
+        type(TypeString::getInstance());
+        if(*args()[0]->type() != *TypeReference::make(Location(), TypeString::getInstance()))
             argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
         argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
         return;
     }
     case BuiltInFunctionExpression::FnType::Mid3:
     {
-        type(TypeReference::make(Location(), TypeString::getInstance()));
-        if(*args()[0]->type() == *type())
-            argsRef()[0] = CastExpression::castImplicit(args()[0], type());
-        else
+        type(TypeString::getInstance());
+        if(*args()[0]->type() != *TypeReference::make(Location(), TypeString::getInstance()))
             argsRef()[0] = CastExpression::castImplicit(args()[0], TypeString::getInstance());
         argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
         argsRef()[2] = CastExpression::castImplicit(args()[2], TypeInteger::getInstance());
@@ -429,11 +456,24 @@ void BuiltInFunctionExpression::calcType()
         return;
     }
     case BuiltInFunctionExpression::FnType::UBound1:
-        assert(false);
+    {
+        type(TypeInteger::getInstance());
+        shared_ptr<const TypeArray> typeArray = dynamic_pointer_cast<const TypeArray>(args()[0]->type()->toRValue()->getAbsoluteBaseType());
+        if(typeArray == nullptr)
+            throw ParserError(location(), L"invalid argument type for UBound");
+        argsRef()[0] = CastExpression::castImplicit(args()[0], typeArray);
         return;
+    }
     case BuiltInFunctionExpression::FnType::UBound2:
-        assert(false);
+    {
+        type(TypeInteger::getInstance());
+        shared_ptr<const TypeArray> typeArray = dynamic_pointer_cast<const TypeArray>(args()[0]->type()->toRValue()->getAbsoluteBaseType());
+        if(typeArray == nullptr)
+            throw ParserError(location(), L"invalid argument type for UBound");
+        argsRef()[0] = CastExpression::castImplicit(args()[0], typeArray);
+        argsRef()[1] = CastExpression::castImplicit(args()[1], TypeInteger::getInstance());
         return;
+    }
     case BuiltInFunctionExpression::FnType::UCase:
     {
         type(TypeString::getInstance());
@@ -744,5 +784,10 @@ void UnaryPlusExpression::writeCode(CodeWriter &cw) const
 void BuiltInFunctionExpression::writeCode(CodeWriter &cw) const
 {
     cw.visitBuiltInFunctionExpression(static_pointer_cast<const BuiltInFunctionExpression>(shared_from_this()));
+}
+
+void ArrayIndexExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitArrayIndexExpression(static_pointer_cast<const ArrayIndexExpression>(shared_from_this()));
 }
 }

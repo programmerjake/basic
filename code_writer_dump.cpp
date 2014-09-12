@@ -29,6 +29,31 @@ void CodeWriterDump::visitAndExpression(shared_ptr<const AST::AndExpression> nod
     dumpExpression(node, "And");
 }
 
+void CodeWriterDump::visitArrayIndexExpression(shared_ptr<const AST::ArrayIndexExpression> node)
+{
+    string nodeName = "ArrayIndex";
+    os() << indent << nodeName << ": " << string_cast<string>(static_cast<wstring>(node->location())) << "\n";
+    os() << indent << nodeName << ".Type:\n";
+    indent.depth++;
+    node->type()->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".Array:\n";
+    indent.depth++;
+    node->args()[0]->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".Indexes:\n";
+    indent.depth++;
+    bool first = true;
+    for(shared_ptr<const AST::Expression> e : node->args())
+    {
+        if(first)
+            first = false;
+        else
+            e->writeCode(*this);
+    }
+    indent.depth--;
+}
+
 void CodeWriterDump::visitAssignStatement(shared_ptr<const AST::AssignStatement> node)
 {
     string nodeName = "Assign";

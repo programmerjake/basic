@@ -274,6 +274,20 @@ public:
         assert(false);
         return L"";
     }
+    static bool isMidFunction(std::shared_ptr<const Expression> arg)
+    {
+        std::shared_ptr<const BuiltInFunctionExpression> fn = std::dynamic_pointer_cast<const BuiltInFunctionExpression>(arg);
+        if(fn == nullptr)
+            return false;
+        switch(fn->fnType())
+        {
+        case FnType::Mid2:
+        case FnType::Mid3:
+            return true;
+        default:
+            return false;
+        }
+    }
 private:
     FnType fnType_;
     void calcType(); // in expressions.cpp

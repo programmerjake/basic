@@ -37,7 +37,7 @@ private:
     };
     Indenter indent;
     bool didIndent = false;
-    bool isDeclaration = false, isInitialization = false;
+    bool isDeclaration = false, isInitialization = false, isInitializer = false;
     std::string declarationTypeAfterVariable;
     bool canSkipSemicolon = false;
     size_t nextTempVariableIndex = 0;
@@ -47,6 +47,7 @@ private:
         ss << "t_" << nextTempVariableIndex++;
         return ss.str();
     }
+    void writeInitializer(std::shared_ptr<const AST::Variable> node);
 public:
     CodeWriterC(std::shared_ptr<std::ostream> sourceStream)
         : sourceStream(sourceStream), currentOutputStream(sourceStream.get())
@@ -54,6 +55,7 @@ public:
     }
     virtual void visitAddExpression(std::shared_ptr<const AST::AddExpression> node) override;
     virtual void visitAndExpression(std::shared_ptr<const AST::AndExpression> node) override;
+    virtual void visitArrayIndexExpression(std::shared_ptr<const AST::ArrayIndexExpression> node) override;
     virtual void visitAssignStatement(std::shared_ptr<const AST::AssignStatement> node) override;
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) override;
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) override;

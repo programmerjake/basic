@@ -5,6 +5,9 @@
 #include "ast/type.h"
 #include "ast/cast_expression.h"
 #include "ast/statement.h"
+#include "ast/builtin_function.h"
+#include "ast/type_reference.h"
+#include "ast/type_builtin.h"
 #include <memory>
 #include <cwchar>
 #include <string>
@@ -20,7 +23,12 @@ private:
     AssignStatement(Location location, std::shared_ptr<Expression> lhs, std::shared_ptr<Expression> rhs)
         : Statement(location), lhs(lhs), rhs(rhs)
     {
-        if(!lhs->type()->isLValue())
+        if(BuiltInFunctionExpression::isMidFunction(lhs)) // Mid is a special case
+        {
+            std::shared_ptr<const BuiltInFunctionExpression> fn = std::dynamic_pointer_cast<const BuiltInFunctionExpression>(lhs);
+            CastExpression::checkCast(fn->args().front()->location(), fn->args().front(), TypeReference::toLValue(TypeString::getInstance()), true);
+        }
+        else if(!lhs->type()->isLValue())
             throw ParserError(location, L"can not assign to a rvalue");
         this->rhs = CastExpression::castImplicit(rhs, lhs->type()->toRValue());
     }

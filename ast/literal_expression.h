@@ -146,18 +146,22 @@ class IntegerLiteralExpression : public LiteralExpression
     int getMessiness(uint64_t value, int base) const
     {
         int retval = 0;
-        int lastDigit = -100;
+        int lastDigit = 0;
         do
         {
             int digit = value % base;
             value /= base;
             int digitDistance = digit - lastDigit;
+            if(digitDistance > base / 2)
+                digitDistance -= base;
+            else if(digitDistance < -base / 2)
+                digitDistance += base;
             lastDigit = digit;
-            if(digitDistance < 0)
-                digitDistance = -digitDistance;
             int additionalMessiness = 1;
-            if(digitDistance <= 2)
-                additionalMessiness -= digitDistance;
+            digitDistance *= digitDistance;
+            if(digitDistance > 4)
+                digitDistance = 4;
+            additionalMessiness += digitDistance;
             retval += additionalMessiness;
         }
         while(value > 0);
@@ -172,7 +176,7 @@ class IntegerLiteralExpression : public LiteralExpression
         }
         if(value < 0x18)
             return false;
-        if(getMessiness(value, 10) <= getMessiness(value, 0x10) * 11 / 10)
+        if(getMessiness(value, 10) <= getMessiness(value, 0x10) * 25 / 10)
             return false;
         return true;
     }

@@ -33,5 +33,6 @@
 #include "ast/initialize_statement.h"
 #include "ast/for_statement.h"
 #include "ast/type_array.h"
+#include "ast/array_index_expression.h"
 
 #endif // ALL_H_INCLUDED
