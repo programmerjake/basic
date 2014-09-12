@@ -13,13 +13,19 @@ namespace AST
 {
 class CastExpression final : public Expression
 {
+public:
+    static void checkCast(Location location, std::shared_ptr<Expression> expression, std::shared_ptr<const Type> newType, bool isImplicit)
+    {
+        if(!expression->type()->canCastTo(newType, isImplicit))
+            throw ParserError(location, (isImplicit ? L"can't implicitly cast " : L"can't cast ") + expression->type()->toString() + L" to " + newType->toString());
+    }
 private:
     bool isImplicit_;
     CastExpression(Location location, std::shared_ptr<Expression> expression, std::shared_ptr<const Type> newType, bool isImplicit, bool checkForErrors)
         : Expression(location, newType), isImplicit_(isImplicit)
     {
-        if(checkForErrors && !expression->type()->canCastTo(newType, isImplicit))
-            throw ParserError(location, (isImplicit ? L"can't implicitly cast " : L"can't cast ") + expression->type()->toString() + L" to " + newType->toString());
+        if(checkForErrors)
+            checkCast(location, expression, newType, isImplicit);
         argsRef().assign(1, expression);
     }
 public:

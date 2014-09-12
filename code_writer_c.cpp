@@ -392,17 +392,18 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "#include <string>\n";
         os() << indent << "#include <sstream>\n";
         os() << indent << "#include <cstdint>\n";
+        os() << indent << "#include <tuple>\n";
         os() << indent << "\n";
         os() << indent << "using namespace std;\n";
         os() << indent << "\n";
-        os() << indent << "long fn_Asc(wstring str)\n";
+        os() << indent << "inline long fn_Asc(wstring str)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "return (str.empty() ? -1 : (long)str[0]);\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_Hex(uint64_t v)\n";
+        os() << indent << "inline wstring fn_Hex(uint64_t v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "wstring retval = L\"\";\n";
@@ -419,7 +420,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_Oct(uint64_t v)\n";
+        os() << indent << "inline wstring fn_Oct(uint64_t v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "wstring retval = L\"\";\n";
@@ -436,7 +437,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_Str(uint64_t v)\n";
+        os() << indent << "inline wstring fn_Str(uint64_t v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "wstring retval = L\"\";\n";
@@ -453,14 +454,14 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_Str(int64_t v)\n";
+        os() << indent << "inline wstring fn_Str(int64_t v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "return v < 0 ? L\"-\" + fn_Str((uint64_t)-v) : fn_Str((uint64_t)v);\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_Str(double v)\n";
+        os() << indent << "inline wstring fn_Str(double v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "wostringstream ss;\n";
@@ -469,7 +470,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_LTrim(wstring str)\n";
+        os() << indent << "inline wstring fn_LTrim(wstring str)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "size_t pos = str.find_first_not_of(L\" \");\n";
@@ -481,7 +482,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_RTrim(wstring str)\n";
+        os() << indent << "inline wstring fn_RTrim(wstring str)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "size_t pos = str.find_last_not_of(L\" \");\n";
@@ -493,7 +494,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_Right(wstring str, long length)\n";
+        os() << indent << "inline wstring fn_Right(wstring str, long length)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "if(length <= 0)\n";
@@ -508,7 +509,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "long fn_Sgn(int64_t v)\n";
+        os() << indent << "inline long fn_Sgn(int64_t v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "if(v < 0)\n";
@@ -523,7 +524,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "long fn_Sgn(uint64_t v)\n";
+        os() << indent << "inline long fn_Sgn(uint64_t v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "if(v > 0)\n";
@@ -534,7 +535,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "long fn_Sgn(double v)\n";
+        os() << indent << "inline long fn_Sgn(double v)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "if(v < 0)\n";
@@ -549,7 +550,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "long fn_InStr(wstring a, wstring b, long start = 1)\n";
+        os() << indent << "inline long fn_InStr(wstring a, wstring b, long start = 1)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "size_t retval = a.find(b, (size_t)(start - 1));\n";
@@ -561,7 +562,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_UCase(wstring str)\n";
+        os() << indent << "inline wstring fn_UCase(wstring str)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "wstring retval;\n";
@@ -574,7 +575,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "wstring fn_LCase(wstring str)\n";
+        os() << indent << "inline wstring fn_LCase(wstring str)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "wstring retval;\n";
@@ -654,14 +655,14 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth--;
         os() << indent << "};\n";
         os() << indent << "\n";
-        os() << indent << "bool iswodigit(wint_t ch)\n";
+        os() << indent << "inline bool iswodigit(wint_t ch)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "return (ch >= '0' && ch <= '7');\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "\n";
-        os() << indent << "double fn_Val(wstring svalue)\n";
+        os() << indent << "inline double fn_Val(wstring svalue)\n";
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "if(svalue.empty())\n";
@@ -833,6 +834,54 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "return retval;\n";
         indent.depth--;
         os() << indent << "}\n";
+        os() << indent << "\n";
+        os() << indent << "template <typename T, size_t N = 1>\n";
+        os() << indent << "struct ArrayDescriptor final\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "T *elements;\n";
+        os() << indent << "long base[N];\n";
+        os() << indent << "size_t size[N];\n";
+        indent.depth--;
+        os() << indent << "private:\n";
+        indent.depth++;
+        os() << indent << "constexpr size_t arrayIndexSize(size_t indexNumber) const\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "return (indexNumber + 1 < N) ? arrayIndexSize(indexNumber + 1) * size[indexNumber] : (indexNumber < N ? size[indexNumber] : 1);\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "template <typename ...Args>\n";
+        os() << indent << "inline T *atHelper(long index, Args... args) const\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "T *ptr = atHelper(args...);\n";
+        os() << indent << "constexpr size_t indexNumber = N - (sizeof...(args) + 1);\n";
+        os() << indent << "assert((size_t)(index - base[indexNumber]) < size[indexNumber]);\n";
+        os() << indent << "return ptr + (arrayIndexSize(indexNumber) * (index - base[indexNumber]));\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        os() << indent << "inline T * atHelper() const\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "return elements;\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        indent.depth--;
+        os() << indent << "public:\n";
+        indent.depth++;
+        os() << indent << "template <typename ...Args>\n";
+        os() << indent << "inline T *at(Args... args) const\n";
+        os() << indent << "{\n";
+        indent.depth++;
+        os() << indent << "static_assert(sizeof...(args) == N, \"incorrect argument count for array\");\n";
+        os() << indent << "return atHelper(args...);\n";
+        indent.depth--;
+        os() << indent << "}\n";
+        indent.depth--;
+        os() << indent << "};\n";
+        os() << indent << "\n";
+        os() << indent << "\n";
     }
     else
     {
@@ -1378,6 +1427,16 @@ void CodeWriterC::visitSubExpression(shared_ptr<const AST::SubExpression> node)
         e->writeCode(*this);
         os() << ")";
     }
+}
+
+void CodeWriterC::visitTypeArray(shared_ptr<const AST::TypeArray> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "const ArrayDescriptor<";
+    node->elementType()->writeCode(*this);
+    os() << ", " << node->indexRanges().size() << "> *";
 }
 
 void CodeWriterC::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)

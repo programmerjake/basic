@@ -642,4 +642,12 @@ void TypeReference::writeCode(CodeWriter &cw) const
 {
     cw.visitTypeReference(static_pointer_cast<const TypeReference>(shared_from_this()));
 }
+
+void TypeArray::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeArray(static_pointer_cast<const TypeArray>(shared_from_this()));
+}
+
+constexpr TypeArray::IndexRange TypeArray::defaultEmptyRange;
+constexpr int64_t TypeArray::defaultRangeStart;
 }

@@ -42,6 +42,7 @@ public:
     virtual void visitStaticVariable(std::shared_ptr<const AST::StaticVariable> node) = 0;
     virtual void visitStringLiteralExpression(std::shared_ptr<const AST::StringLiteralExpression> node) = 0;
     virtual void visitSubExpression(std::shared_ptr<const AST::SubExpression> node) = 0;
+    virtual void visitTypeArray(std::shared_ptr<const AST::TypeArray> node) = 0;
     virtual void visitTypeBoolean(std::shared_ptr<const AST::TypeBoolean> node) = 0;
     virtual void visitTypeDouble(std::shared_ptr<const AST::TypeDouble> node) = 0;
     virtual void visitTypeInt16(std::shared_ptr<const AST::TypeInt16> node) = 0;

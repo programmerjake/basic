@@ -59,6 +59,7 @@ public:
     virtual void visitStaticVariable(std::shared_ptr<const AST::StaticVariable> node) override;
     virtual void visitStringLiteralExpression(std::shared_ptr<const AST::StringLiteralExpression> node) override;
     virtual void visitSubExpression(std::shared_ptr<const AST::SubExpression> node) override;
+    virtual void visitTypeArray(std::shared_ptr<const AST::TypeArray> node) override;
     virtual void visitTypeBoolean(std::shared_ptr<const AST::TypeBoolean> node) override;
     virtual void visitTypeDouble(std::shared_ptr<const AST::TypeDouble> node) override;
     virtual void visitTypeInt16(std::shared_ptr<const AST::TypeInt16> node) override;

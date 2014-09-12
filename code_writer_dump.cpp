@@ -292,6 +292,26 @@ void CodeWriterDump::visitSubExpression(shared_ptr<const AST::SubExpression> nod
     dumpExpression(node, "Subtract");
 }
 
+void CodeWriterDump::visitTypeArray(shared_ptr<const AST::TypeArray> node)
+{
+    os() << indent << "TypeArray:\n";
+    indent.depth++;
+    size_t indexNumber = 0;
+    for(AST::TypeArray::IndexRange ir : node->indexRanges())
+    {
+        os() << indent << "TypeArray." << ++indexNumber << ": ";
+        if(AST::TypeArray::isEmptyRange(ir))
+            os() << "Any\n";
+        else
+            os() << std::get<0>(ir) << " To " << std::get<1>(ir) << "\n";
+    }
+    indent.depth--;
+    os() << indent << "TypeArray.elementType:\n";
+    indent.depth++;
+    node->elementType()->writeCode(*this);
+    indent.depth--;
+}
+
 void CodeWriterDump::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)
 {
     os() << indent << "TypeBoolean\n";

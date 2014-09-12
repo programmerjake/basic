@@ -16,8 +16,8 @@ class TypeArray final : public Type
 {
 public:
     typedef std::pair<std::int64_t, std::int64_t> IndexRange;
-    static constexpr IndexRange defaultEmptyRange = IndexRange(1, 0);
-    static constexpr std::int64_t defaultRangeStart = 1;
+    static constexpr IndexRange defaultEmptyRange = IndexRange(1, 0); // definition in type_builtin.cpp
+    static constexpr std::int64_t defaultRangeStart = 1; // definition in type_builtin.cpp
     static constexpr bool isEmptyRange(IndexRange ir)
     {
         return std::get<0>(ir) > std::get<1>(ir);
@@ -139,7 +139,6 @@ protected:
             return nullptr;
         return make(location(), newElementType, newIndexRanges);
     }
-#warning finish implementing
 };
 }
 
