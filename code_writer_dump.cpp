@@ -372,6 +372,26 @@ void CodeWriterDump::visitTypeInteger(shared_ptr<const AST::TypeInteger> node)
     os() << indent << "TypeInteger\n";
 }
 
+void CodeWriterDump::visitTypeProcedure(shared_ptr<const AST::TypeProcedure> node)
+{
+    os() << indent << "TypeProcedure: " << string_cast<string>(AST::TypeProcedure::getProcedureTypeString(node->procedureType)) << "\n";
+    if(AST::TypeProcedure::getProcedureHasReturnValue(node->procedureType))
+    {
+        os() << indent << "TypeProcedure.ReturnType:\n";
+        indent.depth++;
+        node->returnType->writeCode(*this);
+        indent.depth--;
+    }
+    size_t argNumber = 0;
+    for(shared_ptr<const AST::Type> arg : node->args)
+    {
+        os() << indent << "TypeProcedure.Argument" << ++argNumber << "\n";
+        indent.depth++;
+        arg->writeCode(*this);
+        indent.depth--;
+    }
+}
+
 void CodeWriterDump::visitTypeReference(shared_ptr<const AST::TypeReference> node)
 {
     os() << indent << "TypeReference:\n";

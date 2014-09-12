@@ -702,6 +702,16 @@ fn_decl_arg_list_non_empty: Id As type {handleErrorNotImplemented($1.token.locat
     | fn_decl_arg_list_non_empty ',' Id As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
     ;
 
+fn_type_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
+    | fn_type_arg_list_non_empty {$$ = $1;}
+    ;
+
+fn_type_arg_list_non_empty: Id As type {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$3.node});}
+    | As type {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$2.node});}
+    | fn_type_arg_list_non_empty ',' Id As type {$$ = $1; $$.nodes.push_back($5.node);}
+    | fn_type_arg_list_non_empty ',' As type {$$ = $1; $$.nodes.push_back($4.node);}
+    ;
+
 type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     | Integer {$$ = ParserValueType(AST::TypeInteger::getInstance());}
     | Int8  {$$ = ParserValueType(AST::TypeInt8::getInstance());}
@@ -725,8 +735,26 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
     {
         $$ = ParserValueType(AST::TypeArray::make($1.token.location, dynamic_pointer_cast<const AST::Type>($3.node), vector<AST::TypeArray::IndexRange>{AST::TypeArray::defaultEmptyRange}));
     }
-    | Function '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented($1.token.location, L"Function type");}
-    | Sub '(' fn_decl_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Sub type");}
+    | Function '(' fn_type_arg_list ')' As type
+    {
+        vector<shared_ptr<const AST::Type>> args;
+        args.reserve($3.nodes.size());
+        for(auto arg : $3.nodes)
+        {
+            args.push_back(dynamic_pointer_cast<const AST::Type>(arg));
+        }
+        $$ = ParserValueType(AST::TypeProcedure::make($1.token.location, AST::TypeProcedure::ProcedureType::Function, args, dynamic_pointer_cast<const AST::Type>($6.node)));
+    }
+    | Sub '(' fn_type_arg_list ')'
+    {
+        vector<shared_ptr<const AST::Type>> args;
+        args.reserve($3.nodes.size());
+        for(auto arg : $3.nodes)
+        {
+            args.push_back(dynamic_pointer_cast<const AST::Type>(arg));
+        }
+        $$ = ParserValueType(AST::TypeProcedure::make($1.token.location, AST::TypeProcedure::ProcedureType::Sub, args, nullptr));
+    }
     | TypeOf '(' expression ')' {$$ = ParserValueType(dynamic_pointer_cast<AST::Expression>($3.node)->type()->toRValue());}
     | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::Type) ::handleError($1.token.location, $1.token.svalue + L" is not a type"); $$ = ParserValueType(symbol.value);}
     ;

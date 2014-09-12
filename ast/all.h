@@ -34,5 +34,6 @@
 #include "ast/for_statement.h"
 #include "ast/type_array.h"
 #include "ast/array_index_expression.h"
+#include "ast/type_procedure.h"
 
 #endif // ALL_H_INCLUDED

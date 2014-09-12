@@ -70,6 +70,7 @@
 		<Unit filename="ast/type_array.h" />
 		<Unit filename="ast/type_builtin.cpp" />
 		<Unit filename="ast/type_builtin.h" />
+		<Unit filename="ast/type_procedure.h" />
 		<Unit filename="ast/type_reference.h" />
 		<Unit filename="ast/unary_plus_expression.h" />
 		<Unit filename="ast/variable.h" />

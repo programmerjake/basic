@@ -1,5 +1,4 @@
-#include "ast/type_builtin.h"
-#include "ast/type_reference.h"
+#include "ast/all.h"
 #include <cassert>
 #include "code_writer.h"
 
@@ -650,4 +649,9 @@ void TypeArray::writeCode(CodeWriter &cw) const
 
 constexpr TypeArray::IndexRange TypeArray::defaultEmptyRange;
 constexpr int64_t TypeArray::defaultRangeStart;
+
+void TypeProcedure::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeProcedure(static_pointer_cast<const TypeProcedure>(shared_from_this()));
+}
 }

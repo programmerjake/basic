@@ -127,7 +127,7 @@ public:
 class IntegerLiteralExpression : public LiteralExpression
 {
     IntegerLiteralExpression(Location location, std::int64_t value, bool isSigned, std::shared_ptr<const Type> type)
-        : LiteralExpression(location, type), value(value)
+        : LiteralExpression(location, type), value(value), isSigned(isSigned)
     {
     }
     static std::shared_ptr<const Type> calcType(std::int64_t value, bool isSigned)
@@ -170,13 +170,11 @@ class IntegerLiteralExpression : public LiteralExpression
     bool shouldDisplayAsHex() const
     {
         uint64_t value = this->value;
-        if(isSigned)
-        {
+        if(isSigned && this->value < 0)
             value = -value;
-        }
         if(value < 0x18)
             return false;
-        if(getMessiness(value, 10) <= getMessiness(value, 0x10) * 25 / 10)
+        if(getMessiness(value, 10) <= getMessiness(value, 0x10) * 0x10 / 10)
             return false;
         return true;
     }
@@ -206,7 +204,7 @@ public:
             ss << std::hex << std::uppercase << L"&H";
         }
         ss << value;
-        if(type() != calcType(value, isSigned))
+        if(*type() != *calcType(value, isSigned))
         {
             ss << L"_";
             if(type() == TypeInt8::getInstance())
@@ -225,6 +223,8 @@ public:
                 ss << L"U32";
             else if(type() == TypeUInt64::getInstance())
                 ss << L"U64";
+            else if(type() == TypeInteger::getInstance())
+                ss << L"Integer";
             else
                 ss << L"unknown";
         }

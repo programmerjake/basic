@@ -115,28 +115,71 @@ void dumpCode(shared_ptr<AST::Base> code)
     cw.finish();
 }
 
+void help()
+{
+    cout << "Usage: basic [<options>] [--] [<inputfile.bas>]\n\nOptions:\n-h\t\tShow this help.\n--help\n-?\n\n--dump\t\tDump AST to stdout.\n";
+}
+
+void writeError(wstring msg)
+{
+    cerr << L"error: " << string_cast<string>(msg) << endl;
+}
+
 int main(int argc, char **argv)
 {
     wstring fileName = L"";
-    if(argc > 1)
-        fileName = string_cast<wstring>(argv[1]);
-    if(fileName == L"-h" || fileName == L"--help" || fileName == L"-?")
+    bool useDump = false, gettingOptions = true;
+    for(int i = 1; i < argc; i++)
     {
-        cout << "Usage: basic [<inputfile.bas>]\n";
-        return 0;
+        wstring arg = string_cast<wstring>(argv[i]);
+        if(gettingOptions && arg.substr(0, 1) == L"-")
+        {
+            if(arg == L"-h" || arg == L"--help" || arg == L"-?")
+            {
+                help();
+                return 0;
+            }
+            else if(arg == L"--dump")
+            {
+                useDump = true;
+            }
+            else if(arg == L"--")
+            {
+                gettingOptions = false;
+            }
+            else
+            {
+                writeError(L"invalid option : " + arg);
+                return 1;
+            }
+        }
+        else if(fileName != L"")
+        {
+            writeError(L"can't specify two files at once");
+            return 1;
+        }
+        else
+            fileName = arg;
     }
+    if(fileName.empty())
+        fileName = L"-";
     try
     {
         shared_ptr<InputStream> is;
-        if(fileName.empty())
+        if(fileName == L"-")
             is = make_shared<FileInputStream>();
         else
             is = make_shared<FileInputStream>(fileName);
         shared_ptr<AST::CodeBlock> code = parseAll(is);
         is = nullptr;
+        if(useDump)
+        {
+            dumpCode(code);
+            return 0;
+        }
         shared_ptr<CodeWriter> cw;
         shared_ptr<ostream> os;
-        if(fileName.empty())
+        if(fileName == L"-")
             os = shared_ptr<ostream>(&cout, [](ostream *){});
         else
             os = make_shared<ofstream>(string_cast<string>(fileName + L".cpp").c_str());

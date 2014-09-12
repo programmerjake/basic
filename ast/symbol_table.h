@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <cwchar>
+#include <cwctype>
 #include <string>
 #include <memory>
 #include <tuple>
@@ -60,6 +61,14 @@ class SymbolTable final
     SymbolTable()
     {
     }
+    static std::wstring toLower(std::wstring str)
+    {
+        for(wchar_t &ch : str)
+        {
+            ch = towlower(ch);
+        }
+        return str;
+    }
 public:
     static std::shared_ptr<SymbolTable> make()
     {
@@ -67,16 +76,16 @@ public:
     }
     bool exists(const std::wstring &name) const
     {
-        return symbolMap.count(name) > 0;
+        return symbolMap.count(toLower(name)) > 0;
     }
     const Symbol &get(const std::wstring &name) const
     {
-        return symbols[symbolMap.at(name)];
+        return symbols[symbolMap.at(toLower(name))];
     }
     bool make(Symbol s)
     {
         assert(!s.empty());
-        auto v = symbolMap.insert(std::pair<std::wstring, size_t>(s.name(), 0));
+        auto v = symbolMap.insert(std::pair<std::wstring, size_t>(toLower(s.name()), 0));
         if(std::get<1>(v))
         {
             std::get<1>(*std::get<0>(v)) = symbols.size();

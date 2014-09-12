@@ -89,6 +89,7 @@ public:
     virtual void visitTypeInt64(std::shared_ptr<const AST::TypeInt64> node) override;
     virtual void visitTypeInt8(std::shared_ptr<const AST::TypeInt8> node) override;
     virtual void visitTypeInteger(std::shared_ptr<const AST::TypeInteger> node) override;
+    virtual void visitTypeProcedure(std::shared_ptr<const AST::TypeProcedure> node) override;
     virtual void visitTypeReference(std::shared_ptr<const AST::TypeReference> node) override;
     virtual void visitTypeSingle(std::shared_ptr<const AST::TypeSingle> node) override;
     virtual void visitTypeString(std::shared_ptr<const AST::TypeString> node) override;

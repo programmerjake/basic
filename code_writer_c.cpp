@@ -479,6 +479,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "#include <string>\n";
         os() << indent << "#include <sstream>\n";
         os() << indent << "#include <cstdint>\n";
+        os() << indent << "#include <cassert>\n";
         os() << indent << "#include <tuple>\n";
         os() << indent << "#include <memory>\n";
         os() << indent << "\n";
@@ -866,11 +867,12 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "template <typename ...Args>\n";
         os() << indent << "ArrayDescriptor(T *elements, Args... args)\n";
         indent.depth++;
-        os() << indent << ": ArrayDescriptor(args...), elements(elements)\n";
+        os() << indent << ": ArrayDescriptor(args...)\n";
         indent.depth--;
         os() << indent << "{\n";
         indent.depth++;
         os() << indent << "static_assert(sizeof...(args) == 2 * N, \"array index count doesn't match\");\n";
+        os() << indent << "this->elements = elements;\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "~ArrayDescriptor()\n";
@@ -1111,7 +1113,21 @@ void CodeWriterC::visitDoubleLiteralExpression(shared_ptr<const AST::DoubleLiter
     ostringstream ss;
     ss.precision(17);
     ss << showpoint << node->value;
-    os() << ss.str();
+    string str = ss.str();
+    size_t exponentLocation = str.find_last_of("eE");
+    size_t periodLocation = str.find('.');
+    if(exponentLocation != 0 && periodLocation != string::npos)
+    {
+        size_t lastNonzeroLocation = str.find_last_not_of('0', exponentLocation == string::npos ? string::npos : exponentLocation - 1);
+        if(lastNonzeroLocation != string::npos && lastNonzeroLocation >= periodLocation)
+        {
+            if(exponentLocation == string::npos)
+                str.erase(lastNonzeroLocation + 1);
+            else
+                str.erase(lastNonzeroLocation + 1, exponentLocation - lastNonzeroLocation - 1);
+        }
+    }
+    os() << str;
 }
 
 void CodeWriterC::visitFDivExpression(shared_ptr<const AST::FDivExpression> node)
@@ -1365,8 +1381,22 @@ void CodeWriterC::visitSingleLiteralExpression(shared_ptr<const AST::SingleLiter
     didIndent = true;
     ostringstream ss;
     ss.precision(9);
-    ss << showpoint << node->value << "f";
-    os() << ss.str();
+    ss << showpoint << node->value;
+    string str = ss.str();
+    size_t exponentLocation = str.find_last_of("eE");
+    size_t periodLocation = str.find('.');
+    if(exponentLocation != 0 && periodLocation != string::npos)
+    {
+        size_t lastNonzeroLocation = str.find_last_not_of('0', exponentLocation == string::npos ? string::npos : exponentLocation - 1);
+        if(lastNonzeroLocation != string::npos && lastNonzeroLocation >= periodLocation)
+        {
+            if(exponentLocation == string::npos)
+                str.erase(lastNonzeroLocation + 1);
+            else
+                str.erase(lastNonzeroLocation + 1, exponentLocation - lastNonzeroLocation - 1);
+        }
+    }
+    os() << str << "f";
 }
 
 void CodeWriterC::visitStaticVariable(shared_ptr<const AST::StaticVariable> node)
@@ -1609,6 +1639,63 @@ void CodeWriterC::visitTypeInt8(shared_ptr<const AST::TypeInt8> node)
         os() << "(int8_t)0";
     else
         os() << "int8_t";
+}
+
+void CodeWriterC::visitTypeProcedure(shared_ptr<const AST::TypeProcedure> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    if(isInitializer)
+    {
+        isInitializer = false;
+        os() << "(";
+        visitTypeProcedure(node);
+        isInitializer = true;
+        os() << ")nullptr";
+        return;
+    }
+    if(!isDeclaration)
+    {
+        declarationTypeAfterVariable = "";
+        isDeclaration = true;
+        visitTypeProcedure(node);
+        os() << declarationTypeAfterVariable;
+        isDeclaration = false;
+        return;
+    }
+    string outsideDeclarationTypeAfterVariable = declarationTypeAfterVariable;
+    declarationTypeAfterVariable = "";
+    switch(node->procedureType)
+    {
+    case AST::TypeProcedure::ProcedureType::Sub:
+        os() << "void ";
+        break;
+    case AST::TypeProcedure::ProcedureType::Function:
+    {
+        node->returnType->writeCode(*this);
+        os() << " ";
+        break;
+    }
+    }
+    os() << "(*";
+    ostream *outsideStream = currentOutputStream;
+    ostringstream argumentStream;
+    currentOutputStream = &argumentStream;
+    os() << outsideDeclarationTypeAfterVariable << ")(";
+    string seperator = "";
+    string temp = declarationTypeAfterVariable;
+    for(shared_ptr<const AST::Type> arg : node->args)
+    {
+        os() << seperator;
+        seperator = ", ";
+        isDeclaration = false;
+        arg->writeCode(*this);
+        isDeclaration = true;
+    }
+    os() << ")" << temp;
+    currentOutputStream = outsideStream;
+    declarationTypeAfterVariable = argumentStream.str();
 }
 
 void CodeWriterC::visitTypeInteger(shared_ptr<const AST::TypeInteger> node)

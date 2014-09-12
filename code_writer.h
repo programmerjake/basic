@@ -51,6 +51,7 @@ public:
     virtual void visitTypeInt64(std::shared_ptr<const AST::TypeInt64> node) = 0;
     virtual void visitTypeInt8(std::shared_ptr<const AST::TypeInt8> node) = 0;
     virtual void visitTypeInteger(std::shared_ptr<const AST::TypeInteger> node) = 0;
+    virtual void visitTypeProcedure(std::shared_ptr<const AST::TypeProcedure> node) = 0;
     virtual void visitTypeReference(std::shared_ptr<const AST::TypeReference> node) = 0;
     virtual void visitTypeSingle(std::shared_ptr<const AST::TypeSingle> node) = 0;
     virtual void visitTypeString(std::shared_ptr<const AST::TypeString> node) = 0;
