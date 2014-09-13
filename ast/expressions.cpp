@@ -198,6 +198,24 @@ void ArrayIndexExpression::calcType()
     type(TypeReference::toLValue(arrayType->elementType()));
 }
 
+void CallExpression::calcType()
+{
+    shared_ptr<Expression> &procedure = argsRef()[0];
+    shared_ptr<const TypeProcedure> procedureType = dynamic_pointer_cast<const TypeProcedure>(procedure->type()->getAbsoluteBaseType());
+    if(procedureType == nullptr)
+        throw ParserError(location(), L"invalid type for procedure call");
+    procedure = CastExpression::castImplicit(procedure, procedureType);
+    if(procedureType->args.size() + 1 < args().size())
+        throw ParserError(args()[procedureType->args.size() + 1]->location(), L"too many arguments for procedure");
+    if(procedureType->args.size() + 1 > args().size())
+        throw ParserError(location(), L"too few arguments for procedure");
+    for(size_t i = 1; i < args().size(); i++)
+    {
+        argsRef()[i] = CastExpression::castImplicit(args()[i], procedureType->args[i - 1]);
+    }
+    type(procedureType->returnType);
+}
+
 void BuiltInFunctionExpression::calcType()
 {
     switch(fnType())
@@ -435,7 +453,7 @@ void BuiltInFunctionExpression::calcType()
             baseType = Type::getCommonType(args().front()->type()->toRValue()->getAbsoluteBaseType(), TypeDouble::getInstance());
         if(baseType == nullptr)
             throw ParserError(location(), L"invalid argument type for Str");
-        type(baseType);
+        type(TypeString::getInstance());
         argsRef().front() = CastExpression::castImplicit(args().front(), baseType);
         return;
     }
@@ -789,5 +807,10 @@ void BuiltInFunctionExpression::writeCode(CodeWriter &cw) const
 void ArrayIndexExpression::writeCode(CodeWriter &cw) const
 {
     cw.visitArrayIndexExpression(static_pointer_cast<const ArrayIndexExpression>(shared_from_this()));
+}
+
+void CallExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitCallExpression(static_pointer_cast<const CallExpression>(shared_from_this()));
 }
 }

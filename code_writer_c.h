@@ -103,6 +103,7 @@ public:
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) override;
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) override;
     virtual void visitBuiltInFunctionExpression(std::shared_ptr<const AST::BuiltInFunctionExpression> node) override;
+    virtual void visitCallExpression(std::shared_ptr<const AST::CallExpression> node) override;
     virtual void visitCastExpression(std::shared_ptr<const AST::CastExpression> node) override;
     virtual void visitCodeBlock(std::shared_ptr<const AST::CodeBlock> node) override;
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) override;
@@ -128,6 +129,7 @@ public:
     virtual void visitTypeArray(std::shared_ptr<const AST::TypeArray> node) override;
     virtual void visitTypeBoolean(std::shared_ptr<const AST::TypeBoolean> node) override;
     virtual void visitTypeDouble(std::shared_ptr<const AST::TypeDouble> node) override;
+    virtual void visitTypeEmpty(std::shared_ptr<const AST::TypeEmpty> node) override;
     virtual void visitTypeInt16(std::shared_ptr<const AST::TypeInt16> node) override;
     virtual void visitTypeInt32(std::shared_ptr<const AST::TypeInt32> node) override;
     virtual void visitTypeInt64(std::shared_ptr<const AST::TypeInt64> node) override;

@@ -2,6 +2,7 @@
 #define TYPE_PROCEDURE_H_INCLUDED
 
 #include "ast/type.h"
+#include "ast/type_builtin.h"
 #include <memory>
 #include <vector>
 #include <cassert>
@@ -48,7 +49,7 @@ public:
     }
 private:
     TypeProcedure(Location location, ProcedureType procedureType, std::vector<std::shared_ptr<const Type>> args, std::shared_ptr<const Type> returnType)
-        : Type(location), args(args), returnType(returnType), procedureType(procedureType)
+        : Type(location), args(args), returnType(getProcedureHasReturnValue(procedureType) ? returnType : TypeEmpty::getInstance()), procedureType(procedureType)
     {
     }
 public:

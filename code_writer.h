@@ -22,6 +22,7 @@ public:
     virtual void visitAutoVariable(std::shared_ptr<const AST::AutoVariable> node) = 0;
     virtual void visitBooleanLiteralExpression(std::shared_ptr<const AST::BooleanLiteralExpression> node) = 0;
     virtual void visitBuiltInFunctionExpression(std::shared_ptr<const AST::BuiltInFunctionExpression> node) = 0;
+    virtual void visitCallExpression(std::shared_ptr<const AST::CallExpression> node) = 0;
     virtual void visitCastExpression(std::shared_ptr<const AST::CastExpression> node) = 0;
     virtual void visitCodeBlock(std::shared_ptr<const AST::CodeBlock> node) = 0;
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) = 0;
@@ -47,6 +48,7 @@ public:
     virtual void visitTypeArray(std::shared_ptr<const AST::TypeArray> node) = 0;
     virtual void visitTypeBoolean(std::shared_ptr<const AST::TypeBoolean> node) = 0;
     virtual void visitTypeDouble(std::shared_ptr<const AST::TypeDouble> node) = 0;
+    virtual void visitTypeEmpty(std::shared_ptr<const AST::TypeEmpty> node) = 0;
     virtual void visitTypeInt16(std::shared_ptr<const AST::TypeInt16> node) = 0;
     virtual void visitTypeInt32(std::shared_ptr<const AST::TypeInt32> node) = 0;
     virtual void visitTypeInt64(std::shared_ptr<const AST::TypeInt64> node) = 0;

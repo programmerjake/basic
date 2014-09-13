@@ -447,6 +447,24 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
     assert(false);
 }
 
+void CodeWriterC::visitCallExpression(shared_ptr<const AST::CallExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "(*(";
+    assert(node->args().size() >= 1);
+    node->args()[0]->writeCode(*this);
+    os() << "))(";
+    for(size_t i = 1; i < node->args().size(); i++)
+    {
+        if(i > 1)
+            os() << ", ";
+        node->args()[i]->writeCode(*this);
+    }
+    os() << ")";
+}
+
 void CodeWriterC::visitCastExpression(shared_ptr<const AST::CastExpression> node)
 {
     if(!didIndent)
@@ -501,7 +519,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth++;
         os() << indent << "long digit = (int)(v % 0x10);\n";
         os() << indent << "v /= 0x10;\n";
-        os() << indent << "retval += (wchar_t)(digit <= 9 ? '0' + digit : 'A' + digit - 0xA);\n";
+        os() << indent << "retval = (wchar_t)(digit <= 9 ? '0' + digit : 'A' + digit - 0xA) + retval;\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "while(v > 0);\n";
@@ -518,7 +536,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth++;
         os() << indent << "long digit = (int)(v % 8);\n";
         os() << indent << "v /= 8;\n";
-        os() << indent << "retval += (wchar_t)('0' + digit);\n";
+        os() << indent << "retval = (wchar_t)('0' + digit) + retval;\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "while(v > 0);\n";
@@ -535,7 +553,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         indent.depth++;
         os() << indent << "long digit = (int)(v % 10);\n";
         os() << indent << "v /= 10;\n";
-        os() << indent << "retval += (wchar_t)('0' + digit);\n";
+        os() << indent << "retval = (wchar_t)('0' + digit) + retval;\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "while(v > 0);\n";
@@ -1693,6 +1711,11 @@ void CodeWriterC::visitTypeDouble(shared_ptr<const AST::TypeDouble> node)
         os() << "0.0";
     else
         os() << "double";
+}
+
+void CodeWriterC::visitTypeEmpty(shared_ptr<const AST::TypeEmpty> node)
+{
+    assert(false);
 }
 
 void CodeWriterC::visitTypeInt16(shared_ptr<const AST::TypeInt16> node)

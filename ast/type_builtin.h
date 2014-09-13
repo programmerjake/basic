@@ -467,6 +467,40 @@ public:
     virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
 };
 
+class TypeEmpty final : public Type
+{
+private:
+    TypeEmpty()
+        : Type(Location())
+    {
+    }
+public:
+    static std::shared_ptr<TypeEmpty> getInstance()
+    {
+        static std::shared_ptr<TypeEmpty> retval = nullptr;
+        if(retval == nullptr)
+            retval = std::shared_ptr<TypeEmpty>(new TypeEmpty);
+        return retval;
+    }
+    virtual std::wstring toString() const override
+    {
+        return L"<empty>";
+    }
+    virtual bool canCastTo(std::shared_ptr<const Type>, bool = true) const override
+    {
+        return false;
+    }
+    virtual bool operator ==(const Type &rt) const override
+    {
+        return this == &rt;
+    }
+    virtual std::shared_ptr<const Type> getCommonType(std::shared_ptr<const Type>) const override
+    {
+        return nullptr;
+    }
+    virtual void writeCode(CodeWriter &cw) const override; // in type_builtin.cpp
+};
+
 }
 
 #endif // TYPE_INTEGER_H_INCLUDED

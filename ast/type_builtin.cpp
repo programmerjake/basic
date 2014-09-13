@@ -654,4 +654,9 @@ void TypeProcedure::writeCode(CodeWriter &cw) const
 {
     cw.visitTypeProcedure(static_pointer_cast<const TypeProcedure>(shared_from_this()));
 }
+
+void TypeEmpty::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeEmpty(static_pointer_cast<const TypeEmpty>(shared_from_this()));
+}
 }

@@ -471,6 +471,8 @@ declarationPartWithInitializer: Id '=' expression
     {
         shared_ptr<AST::Expression> rhs = dynamic_pointer_cast<AST::Expression>($3.node);
         shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>(rhs->type()->toRValue());
+        if(*type == *AST::TypeEmpty::getInstance())
+            ::handleError($2.token.location, L"initializer has no type");
         wstring name = $1.token.svalue;
         Location location = $1.token.location;
         shared_ptr<AST::Variable> variable;
@@ -875,7 +877,7 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
         }
         else
         {
-            handleErrorNotImplemented($2.token.location, L"Function call");
+            $$ = ParserValueType(AST::CallExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), expression_list));
         }
     }
     | InStr '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
@@ -959,6 +961,7 @@ fn_type_arg_list_non_empty: Id As type {$$ = ParserValueType(vector<shared_ptr<A
     ;
 
 type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
+    | Double {$$ = ParserValueType(AST::TypeDouble::getInstance());}
     | Integer {$$ = ParserValueType(AST::TypeInteger::getInstance());}
     | Int8  {$$ = ParserValueType(AST::TypeInt8::getInstance());}
     | Int16  {$$ = ParserValueType(AST::TypeInt16::getInstance());}
@@ -1001,7 +1004,13 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
         }
         $$ = ParserValueType(AST::TypeProcedure::make($1.token.location, AST::TypeProcedure::ProcedureType::Sub, args, nullptr));
     }
-    | TypeOf '(' expression ')' {$$ = ParserValueType(dynamic_pointer_cast<AST::Expression>($3.node)->type()->toRValue());}
+    | TypeOf '(' expression ')'
+    {
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<AST::Expression>($3.node)->type()->toRValue();
+        if(*type == *AST::TypeEmpty::getInstance())
+            ::handleError($1.token.location, L"TypeOf argument has no type");
+        $$ = ParserValueType(type);
+    }
     | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::Type) ::handleError($1.token.location, $1.token.svalue + L" is not a type"); $$ = ParserValueType(symbol.value);}
     ;
 

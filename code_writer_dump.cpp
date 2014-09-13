@@ -96,6 +96,31 @@ void CodeWriterDump::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltI
     dumpExpression(node, string_cast<string>(L"BuiltInFunction(" + AST::BuiltInFunctionExpression::fnName(node->fnType()) + L")"));
 }
 
+void CodeWriterDump::visitCallExpression(shared_ptr<const AST::CallExpression> node)
+{
+    string nodeName = "Call";
+    os() << indent << nodeName << ": " << string_cast<string>(static_cast<wstring>(node->location())) << "\n";
+    os() << indent << nodeName << ".Type:\n";
+    indent.depth++;
+    node->type()->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".Procedure:\n";
+    indent.depth++;
+    node->args()[0]->writeCode(*this);
+    indent.depth--;
+    os() << indent << nodeName << ".Arguments:\n";
+    indent.depth++;
+    bool first = true;
+    for(shared_ptr<const AST::Expression> e : node->args())
+    {
+        if(first)
+            first = false;
+        else
+            e->writeCode(*this);
+    }
+    indent.depth--;
+}
+
 void CodeWriterDump::visitCastExpression(shared_ptr<const AST::CastExpression> node)
 {
     dumpExpression(node, "Cast");
@@ -372,6 +397,11 @@ void CodeWriterDump::visitTypeBoolean(shared_ptr<const AST::TypeBoolean> node)
 void CodeWriterDump::visitTypeDouble(shared_ptr<const AST::TypeDouble> node)
 {
     os() << indent << "TypeDouble\n";
+}
+
+void CodeWriterDump::visitTypeEmpty(shared_ptr<const AST::TypeEmpty> node)
+{
+    os() << indent << "TypeEmpty\n";
 }
 
 void CodeWriterDump::visitTypeInt16(shared_ptr<const AST::TypeInt16> node)

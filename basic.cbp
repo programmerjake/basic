@@ -45,6 +45,7 @@
 		<Unit filename="ast/assign_statement.h" />
 		<Unit filename="ast/base.h" />
 		<Unit filename="ast/builtin_function.h" />
+		<Unit filename="ast/call_expression.h" />
 		<Unit filename="ast/cast_expression.h" />
 		<Unit filename="ast/code_block.h" />
 		<Unit filename="ast/compare_expression.h" />
