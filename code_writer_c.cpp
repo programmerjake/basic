@@ -105,7 +105,7 @@ void CodeWriterC::visitAutoVariable(shared_ptr<const AST::AutoVariable> node)
             os() << indent;
         didIndent = true;
         node->type()->toRValue()->writeCode(*this);
-        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        os() << " " << string_cast<string>(createVariableName(node)) << declarationTypeAfterVariable;
         didIndent = false;
     }
     else if(isInitialization)
@@ -114,7 +114,7 @@ void CodeWriterC::visitAutoVariable(shared_ptr<const AST::AutoVariable> node)
         if(!didIndent)
             os() << indent;
         didIndent = true;
-        os() << string_cast<string>(createVariableName(node->name()));
+        os() << string_cast<string>(createVariableName(node));
         os() << " = (";
         isInitialization = false;
         if(node->initializer() != nullptr)
@@ -130,7 +130,7 @@ void CodeWriterC::visitAutoVariable(shared_ptr<const AST::AutoVariable> node)
         if(!didIndent)
             os() << indent;
         didIndent = true;
-        os() << "&" << string_cast<string>(createVariableName(node->name()));
+        os() << "&" << string_cast<string>(createVariableName(node));
     }
 }
 
@@ -974,6 +974,15 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
             didIndent = false;
             isDeclaration = false;
             break;
+        case AST::Symbol::Type::Procedure:
+            isDeclaration = true;
+            symbol.value->writeCode(*this);
+            os() << ";\n";
+            didIndent = false;
+            isDeclaration = false;
+            if(std::get<1>(procedureSet.insert(symbol.value)))
+                procedureList.push_back(symbol.value);
+            break;
         default:
             throw runtime_error("can't declare symbol ");
         }
@@ -1005,6 +1014,20 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "return 0;\n";
         indent.depth--;
         os() << indent << "}\n";
+        os() << indent << "\n";
+        for(size_t i = 0; i < procedureList.size(); i++)
+        {
+            isImplementation = true;
+            canSkipSemicolon = false;
+            procedureList[i]->writeCode(*this);
+            if(!canSkipSemicolon)
+            {
+                os() << ";\n";
+            }
+            os() << indent << "\n";
+            didIndent = false;
+            isImplementation = false;
+        }
     }
     else
     {
@@ -1337,6 +1360,81 @@ void CodeWriterC::visitOrExpression(shared_ptr<const AST::OrExpression> node)
     }
 }
 
+void CodeWriterC::visitProcedure(shared_ptr<const AST::Procedure> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    if(isImplementation)
+    {
+        isDeclaration = true;
+        declarationTypeAfterVariable = "";
+        functionArguments = &node->args();
+        node->type()->writeCode(*this);
+        functionArguments = nullptr;
+        os() << string_cast<string>(createFunctionName(node)) << declarationTypeAfterVariable;
+        isImplementation = false;
+        isDeclaration = false;
+        if(node->code != nullptr)
+        {
+            os() << "\n";
+            os() << indent << "{\n";
+            didIndent = false;
+            indent.depth++;
+            if(AST::TypeProcedure::getProcedureHasReturnValue(node->type()->procedureType))
+            {
+                isDeclaration = true;
+                canSkipSemicolon = false;
+                node->returnValue->writeCode(*this);
+                if(!canSkipSemicolon)
+                {
+                    os() << ";\n";
+                    didIndent = false;
+                }
+                isDeclaration = false;
+                isInitialization = true;
+                canSkipSemicolon = false;
+                node->returnValue->writeCode(*this);
+                if(!canSkipSemicolon)
+                {
+                    os() << ";\n";
+                    didIndent = false;
+                }
+                isInitialization = false;
+            }
+            node->code->writeCode(*this);
+            if(AST::TypeProcedure::getProcedureHasReturnValue(node->type()->procedureType))
+            {
+                os() << indent << "return " << string_cast<string>(createVariableName(node->returnValue)) << ";\n";
+            }
+            indent.depth--;
+            os() << indent << "}\n";
+            canSkipSemicolon = true;
+        }
+        else
+        {
+            os() << ";\n";
+            canSkipSemicolon = true;
+            didIndent = false;
+        }
+        isImplementation = true;
+    }
+    else if(isDeclaration)
+    {
+        isImplementation = true;
+        declarationTypeAfterVariable = "";
+        functionArguments = &node->args();
+        node->type()->writeCode(*this);
+        functionArguments = nullptr;
+        os() << string_cast<string>(createFunctionName(node)) << declarationTypeAfterVariable;
+        isImplementation = false;
+    }
+    else
+    {
+        os() << "(&" << string_cast<string>(createFunctionName(node)) << ")";
+    }
+}
+
 void CodeWriterC::visitReferenceVariable(shared_ptr<const AST::ReferenceVariable> node)
 {
     if(isDeclaration)
@@ -1346,7 +1444,7 @@ void CodeWriterC::visitReferenceVariable(shared_ptr<const AST::ReferenceVariable
             os() << indent;
         didIndent = true;
         node->type()->writeCode(*this);
-        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        os() << " " << string_cast<string>(createVariableName(node)) << declarationTypeAfterVariable;
         didIndent = false;
     }
     else if(isInitialization)
@@ -1356,7 +1454,7 @@ void CodeWriterC::visitReferenceVariable(shared_ptr<const AST::ReferenceVariable
         didIndent = true;
         if(node->initializer() != nullptr)
         {
-            os() << string_cast<string>(createVariableName(node->name()));
+            os() << string_cast<string>(createVariableName(node));
             os() << " = (";
             isInitialization = false;
             node->initializer()->writeCode(*this);
@@ -1370,7 +1468,7 @@ void CodeWriterC::visitReferenceVariable(shared_ptr<const AST::ReferenceVariable
         if(!didIndent)
             os() << indent;
         didIndent = true;
-        os() << string_cast<string>(createVariableName(node->name()));
+        os() << string_cast<string>(createVariableName(node));
     }
 }
 
@@ -1409,7 +1507,7 @@ void CodeWriterC::visitStaticVariable(shared_ptr<const AST::StaticVariable> node
         didIndent = true;
         os() << "static ";
         node->type()->toRValue()->writeCode(*this);
-        os() << " " << string_cast<string>(createVariableName(node->name())) << declarationTypeAfterVariable;
+        os() << " " << string_cast<string>(createVariableName(node)) << declarationTypeAfterVariable;
         os() << " = (";
         isDeclaration = false;
         if(node->initializer() != nullptr)
@@ -1425,7 +1523,7 @@ void CodeWriterC::visitStaticVariable(shared_ptr<const AST::StaticVariable> node
         if(!didIndent)
             os() << indent;
         didIndent = true;
-        os() << "&" << string_cast<string>(createVariableName(node->name()));
+        os() << "&" << string_cast<string>(createVariableName(node));
     }
 }
 
@@ -1678,20 +1776,31 @@ void CodeWriterC::visitTypeProcedure(shared_ptr<const AST::TypeProcedure> node)
         break;
     }
     }
-    os() << "(*";
+    if(!isImplementation)
+        os() << "(*";
     ostream *outsideStream = currentOutputStream;
     ostringstream argumentStream;
     currentOutputStream = &argumentStream;
-    os() << outsideDeclarationTypeAfterVariable << ")(";
+    os() << outsideDeclarationTypeAfterVariable;
+    if(!isImplementation)
+        os() << ")";
+    os() << "(";
     string seperator = "";
     string temp = declarationTypeAfterVariable;
+    size_t index = 0;
     for(shared_ptr<const AST::Type> arg : node->args)
     {
         os() << seperator;
         seperator = ", ";
-        isDeclaration = false;
+        declarationTypeAfterVariable = "";
         arg->writeCode(*this);
         isDeclaration = true;
+        if(isImplementation && (index < functionArguments->size() && functionArguments->at(index) != nullptr))
+        {
+            os() << " " << string_cast<string>(createVariableName(functionArguments->at(index)));
+        }
+        os() << declarationTypeAfterVariable;
+        index++;
     }
     os() << ")" << temp;
     currentOutputStream = outsideStream;

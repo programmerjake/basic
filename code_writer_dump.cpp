@@ -266,6 +266,33 @@ void CodeWriterDump::visitOrExpression(shared_ptr<const AST::OrExpression> node)
     dumpExpression(node, "Or");
 }
 
+void CodeWriterDump::visitProcedure(shared_ptr<const AST::Procedure> node)
+{
+    os() << indent << "Procedure:\n";
+    os() << indent << "Procedure.Type:\n";
+    indent.depth++;
+    node->type()->writeCode(*this);
+    indent.depth--;
+    if(!std::get<1>(procedures.insert(node)))
+        return;
+    size_t argNumber = 0;
+    for(shared_ptr<const AST::Variable> arg : node->args())
+    {
+        if(arg != nullptr)
+        os() << indent << "Procedure.Argument" << ++argNumber << ":\n";
+        indent.depth++;
+        arg->writeCode(*this);
+        indent.depth--;
+    }
+    if(node->code)
+    {
+        os() << indent << "Procedure.Code:\n";
+        indent.depth++;
+        node->code->writeCode(*this);
+        indent.depth--;
+    }
+}
+
 void CodeWriterDump::visitReferenceVariable(shared_ptr<const AST::ReferenceVariable> node)
 {
     string nodeName = "ReferenceVariable";

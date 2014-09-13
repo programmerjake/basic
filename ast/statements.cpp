@@ -85,4 +85,9 @@ void ForStatement::writeCode(CodeWriter &cw) const
 {
     cw.visitForStatement(static_pointer_cast<const ForStatement>(shared_from_this()));
 }
+
+void Procedure::writeCode(CodeWriter &cw) const
+{
+    cw.visitProcedure(static_pointer_cast<const Procedure>(shared_from_this()));
+}
 }

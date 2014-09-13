@@ -4,6 +4,7 @@
 #include "code_writer.h"
 #include <ostream>
 #include <memory>
+#include <unordered_set>
 
 class CodeWriterDump final : public CodeWriter
 {
@@ -27,6 +28,7 @@ private:
     };
     Indenter indent;
     void dumpExpression(std::shared_ptr<const AST::Expression> node, std::string nodeName);
+    std::unordered_set<std::shared_ptr<const AST::Procedure>> procedures;
 public:
     CodeWriterDump(std::shared_ptr<std::ostream> dumpStream)
         : dumpStream(dumpStream)
@@ -55,6 +57,7 @@ public:
     virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) override;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) override;
     virtual void visitOrExpression(std::shared_ptr<const AST::OrExpression> node) override;
+    virtual void visitProcedure(std::shared_ptr<const AST::Procedure> node) override;
     virtual void visitReferenceVariable(std::shared_ptr<const AST::ReferenceVariable> node) override;
     virtual void visitSingleLiteralExpression(std::shared_ptr<const AST::SingleLiteralExpression> node) override;
     virtual void visitStaticVariable(std::shared_ptr<const AST::StaticVariable> node) override;

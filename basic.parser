@@ -36,6 +36,15 @@ struct ParserValueType final
         : token(), node(nullptr), nodes(nodes)
     {
     }
+    explicit ParserValueType(vector<shared_ptr<const AST::Base>> nodes)
+        : token(), node(nullptr)
+    {
+        this->nodes.reserve(nodes.size());
+        for(shared_ptr<const AST::Base> n : nodes)
+        {
+            this->nodes.push_back(const_pointer_cast<AST::Base>(n));
+        }
+    }
     bool operator ==(const ParserValueType &rt) const
     {
         return token.type == rt.token.type && node == rt.node;
@@ -94,6 +103,9 @@ inline const AST::Symbol &getSymbolGlobal(ParserBase *parser, Token t)
 }
 
 shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is);
+shared_ptr<AST::Procedure> getContainingProcedure(ParserBase *parser);
+void pushContainingProcedure(ParserBase *parser, shared_ptr<AST::Procedure> procedure);
+void popContainingProcedure(ParserBase *parser);
 
 %}
 %option SymbolPrefix "TokenType::TT"
@@ -216,8 +228,8 @@ variableDeclaration: Dim {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});
 
 declaration: variableDeclaration {$$ = $1;}
     | Type Id newLine typeDefinitionBlock End Type {handleErrorNotImplemented($1.token);}
-    | procedureDefinition {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
-    | procedureDeclaration {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
+    | procedureDefinition {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
+    | procedureDeclaration {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     ;
 
 typeDefinitionBlock: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
@@ -228,12 +240,193 @@ typeDefinitionPartList: typeDefinitionPart {$$ = ParserValueType(vector<shared_p
     | typeDefinitionPartList ',' typeDefinitionPart {$$ = $1; $$.nodes.push_back($1.node);}
     ;
 
-procedureDefinition: Sub Id '(' fn_decl_arg_list ')' codeBlockWithNewLine End Sub {handleErrorNotImplemented($1.token);}
-    | Function Id '(' fn_decl_arg_list ')' As type codeBlockWithNewLine End Function {handleErrorNotImplemented($1.token);}
+procedureStart: Sub Id '(' fn_decl_arg_list ')'
+    {
+        wstring name = $2.token.svalue;
+        Location location = $2.token.location;
+        vector<shared_ptr<const AST::Type>> argTypes;
+        vector<shared_ptr<AST::Base>> argNodes = $4.nodes;
+        assert(argNodes.size() % 2 == 0);
+        argTypes.reserve(argNodes.size() / 2);
+        for(size_t i = 0; i < argNodes.size(); i += 2)
+        {
+            argTypes.push_back(dynamic_pointer_cast<const AST::Type>(argNodes[i + 1]));
+        }
+        shared_ptr<const AST::TypeProcedure> type = AST::TypeProcedure::make(location, AST::TypeProcedure::ProcedureType::Sub, argTypes, nullptr);
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        shared_ptr<AST::Procedure> procedure;
+        if(sts.back()->exists(name))
+        {
+            AST::Symbol s = sts.back()->get(name);
+            if(s.stype() != AST::Symbol::Type::Procedure)
+                ::handleError(location, name + L" already defined");
+            procedure = dynamic_pointer_cast<AST::Procedure>(s.value);
+            if(*type != *procedure->type())
+                ::handleError(location, name + L" doesn't match previous declaration: " + static_cast<wstring>(procedure->location()));
+        }
+        else
+        {
+            procedure = AST::Procedure::make(location, name, type, vector<shared_ptr<AST::Variable>>{}, nullptr, nullptr);
+            AST::Symbol s = AST::Symbol(name, AST::Symbol::Type::Procedure, type, procedure);
+            sts.back()->make(s);
+        }
+        if(procedure->code != nullptr)
+            ::handleError(location, name + L" already defined: " + static_cast<wstring>(procedure->location()));
+        procedure->argsRef().clear();
+        procedure->argsRef().reserve(argTypes.size());
+        sts.push_back(AST::SymbolTable::make());
+        for(size_t i = 0; i < argNodes.size(); i += 2)
+        {
+            shared_ptr<AST::Variable> variable = dynamic_pointer_cast<AST::Variable>(argNodes[i]);
+            procedure->argsRef().push_back(variable);
+            if(variable != nullptr)
+            {
+                variable->containingProcedure(procedure);
+                if(sts.back()->exists(variable->name()))
+                    ::handleError(variable->location(), variable->name() + L" already defined");
+                sts.back()->make(AST::Symbol(variable->name(), argTypes[i / 2]->isLValue() ? AST::Symbol::Type::ReferenceVariable : AST::Symbol::Type::AutoVariable, variable->type(), variable));
+            }
+        }
+        $$ = ParserValueType(procedure);
+        $$.token = $1.token;
+        pushContainingProcedure(this, procedure);
+    }
+    | Function Id '(' fn_decl_arg_list ')' As type
+    {
+        wstring name = $2.token.svalue;
+        Location location = $2.token.location;
+        vector<shared_ptr<const AST::Type>> argTypes;
+        vector<shared_ptr<AST::Base>> argNodes = $4.nodes;
+        assert(argNodes.size() % 2 == 0);
+        argTypes.reserve(argNodes.size() / 2);
+        for(size_t i = 0; i < argNodes.size(); i += 2)
+        {
+            argTypes.push_back(dynamic_pointer_cast<const AST::Type>(argNodes[i + 1]));
+        }
+        shared_ptr<const AST::TypeProcedure> type = AST::TypeProcedure::make(location, AST::TypeProcedure::ProcedureType::Function, argTypes, dynamic_pointer_cast<const AST::Type>($7.node));
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        shared_ptr<AST::Procedure> procedure;
+        if(sts.back()->exists(name))
+        {
+            AST::Symbol s = sts.back()->get(name);
+            if(s.stype() != AST::Symbol::Type::Procedure)
+                ::handleError(location, name + L" already defined");
+            procedure = dynamic_pointer_cast<AST::Procedure>(s.value);
+            if(*type != *procedure->type())
+                ::handleError(location, name + L" doesn't match previous declaration: " + static_cast<wstring>(procedure->location()));
+        }
+        else
+        {
+            procedure = AST::Procedure::make(location, name, type, vector<shared_ptr<AST::Variable>>{}, nullptr, nullptr);
+            AST::Symbol s = AST::Symbol(name, AST::Symbol::Type::Procedure, type, procedure);
+            sts.back()->make(s);
+        }
+        if(procedure->code != nullptr)
+            ::handleError(location, name + L" already defined: " + static_cast<wstring>(procedure->location()));
+        procedure->argsRef().clear();
+        procedure->argsRef().reserve(argTypes.size());
+        sts.push_back(AST::SymbolTable::make());
+        for(size_t i = 0; i < argNodes.size(); i += 2)
+        {
+            shared_ptr<AST::Variable> variable = dynamic_pointer_cast<AST::Variable>(argNodes[i]);
+            procedure->argsRef().push_back(variable);
+            if(variable != nullptr)
+            {
+                variable->containingProcedure(procedure);
+                if(sts.back()->exists(variable->name()))
+                    ::handleError(variable->location(), variable->name() + L" already defined");
+                sts.back()->make(AST::Symbol(variable->name(), argTypes[i / 2]->isLValue() ? AST::Symbol::Type::ReferenceVariable : AST::Symbol::Type::AutoVariable, variable->type(), variable));
+            }
+        }
+        if(procedure->type()->returnType->isLValue())
+            ::handleError(location, L"can't create function that returns a ByRef type");
+        procedure->returnValue = AST::AutoVariable::make(location, procedure, AST::TypeReference::toLValue(procedure->type()->returnType), AST::Variable::getReturnValueName(), nullptr);
+        sts.back()->make(AST::Symbol(procedure->returnValue->name(), AST::Symbol::Type::AutoVariable, procedure->returnValue->type(), procedure->returnValue));
+        $$ = ParserValueType(procedure);
+        $$.token = $1.token;
+        pushContainingProcedure(this, procedure);
+    }
     ;
 
-procedureDeclaration: Declare Sub Id '(' fn_decl_arg_list ')' {handleErrorNotImplemented($1.token.location, L"Declare Sub");}
-    | Declare Function Id '(' fn_decl_arg_list ')' As type {handleErrorNotImplemented($1.token.location, L"Declare Function");}
+subOrFunction: Sub {$$ = $1;}
+    | Function {$$ = $1;}
+    ;
+
+procedureDefinition: procedureStart codeBlockWithNewLine End subOrFunction
+    {
+        getSymbolTableStack(this).pop_back();
+        shared_ptr<AST::Procedure> procedure = dynamic_pointer_cast<AST::Procedure>($1.node);
+        procedure->code = dynamic_pointer_cast<AST::CodeBlock>($2.node);
+        if($1.token.type != $4.token.type)
+            ::handleError($4.token.location, L"expected: " + $1.token.svalue);
+        popContainingProcedure(this);
+    }
+    ;
+
+procedureDeclaration: Declare Sub Id '(' fn_decl_arg_list ')'
+    {
+        wstring name = $3.token.svalue;
+        Location location = $3.token.location;
+        vector<shared_ptr<const AST::Type>> argTypes;
+        vector<shared_ptr<AST::Base>> argNodes = $5.nodes;
+        assert(argNodes.size() % 2 == 0);
+        argTypes.reserve(argNodes.size() / 2);
+        for(size_t i = 0; i < argNodes.size(); i += 2)
+        {
+            argTypes.push_back(dynamic_pointer_cast<const AST::Type>(argNodes[i + 1]));
+        }
+        shared_ptr<const AST::TypeProcedure> type = AST::TypeProcedure::make(location, AST::TypeProcedure::ProcedureType::Sub, argTypes, nullptr);
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+        {
+            AST::Symbol s = sts.back()->get(name);
+            if(s.stype() != AST::Symbol::Type::Procedure)
+                ::handleError(location, name + L" already defined");
+            shared_ptr<AST::Procedure> procedure = dynamic_pointer_cast<AST::Procedure>(s.value);
+            if(*type != *procedure->type())
+                ::handleError(location, name + L" doesn't match previous declaration: " + static_cast<wstring>(procedure->location()));
+        }
+        else
+        {
+            shared_ptr<AST::Procedure> procedure = AST::Procedure::make(location, name, type, vector<shared_ptr<AST::Variable>>{}, nullptr, nullptr);
+            AST::Symbol s = AST::Symbol(name, AST::Symbol::Type::Procedure, type, procedure);
+            sts.back()->make(s);
+        }
+    }
+    | Declare Function Id '(' fn_decl_arg_list ')' As type
+    {
+        wstring name = $3.token.svalue;
+        Location location = $3.token.location;
+        vector<shared_ptr<const AST::Type>> argTypes;
+        vector<shared_ptr<AST::Base>> argNodes = $5.nodes;
+        assert(argNodes.size() % 2 == 0);
+        argTypes.reserve(argNodes.size() / 2);
+        for(size_t i = 0; i < argNodes.size(); i += 2)
+        {
+            argTypes.push_back(dynamic_pointer_cast<const AST::Type>(argNodes[i + 1]));
+        }
+        shared_ptr<const AST::TypeProcedure> type = AST::TypeProcedure::make(location, AST::TypeProcedure::ProcedureType::Function, argTypes, dynamic_pointer_cast<const AST::Type>($8.node));
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+        {
+            AST::Symbol s = sts.back()->get(name);
+            if(s.stype() != AST::Symbol::Type::Procedure)
+                ::handleError(location, name + L" already defined");
+            shared_ptr<AST::Procedure> procedure = dynamic_pointer_cast<AST::Procedure>(s.value);
+            if(*type != *procedure->type())
+                ::handleError(location, name + L" doesn't match previous declaration: " + static_cast<wstring>(procedure->location()));
+        }
+        else
+        {
+            shared_ptr<AST::Procedure> procedure = AST::Procedure::make(location, name, type, vector<shared_ptr<AST::Variable>>{}, nullptr, nullptr);
+            AST::Symbol s = AST::Symbol(name, AST::Symbol::Type::Procedure, type, procedure);
+            sts.back()->make(s);
+        }
+    }
     ;
 
 typeDefinitionPart: Id As type {handleErrorNotImplemented($1.token.location, L"Type");}
@@ -262,7 +455,7 @@ declarationPart: declarationPartWithInitializer
         else
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name, nullptr);
+            variable = AST::AutoVariable::make(location, getContainingProcedure(this), type, name, nullptr);
             stype = AST::Symbol::Type::AutoVariable;
         }
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
@@ -289,7 +482,7 @@ declarationPartWithInitializer: Id '=' expression
         else
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name, rhs);
+            variable = AST::AutoVariable::make(location, getContainingProcedure(this), type, name, rhs);
             stype = AST::Symbol::Type::AutoVariable;
         }
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
@@ -309,13 +502,13 @@ declarationPartWithInitializer: Id '=' expression
         if(type->isLValue())
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::ReferenceVariable::make(location, type, name, dynamic_pointer_cast<AST::Expression>($5.node));
+            variable = AST::ReferenceVariable::make(location, getContainingProcedure(this), type, name, dynamic_pointer_cast<AST::Expression>($5.node));
             stype = AST::Symbol::Type::ReferenceVariable;
         }
         else
         {
             type = AST::TypeReference::make(location, type);
-            variable = AST::AutoVariable::make(location, type, name, dynamic_pointer_cast<AST::Expression>($5.node));
+            variable = AST::AutoVariable::make(location, getContainingProcedure(this), type, name, dynamic_pointer_cast<AST::Expression>($5.node));
             stype = AST::Symbol::Type::AutoVariable;
         }
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
@@ -458,7 +651,15 @@ statement: ifStatement {$$ = $1;}
 forDim: For Dim {$$ = $1; getSymbolTableStack(this).push_back(AST::SymbolTable::make());}
     ;
 
-inlineStatement: expression_no_equals '=' expression {$$ = ParserValueType(AST::AssignStatement::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));}
+inlineStatement: expression_no_equals '=' expression
+    {
+        shared_ptr<AST::Procedure> procedure = getContainingProcedure(this);
+        if($1.node == procedure && procedure->returnValue != nullptr)
+        {
+            $1.node = procedure->returnValue;
+        }
+        $$ = ParserValueType(AST::AssignStatement::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));
+    }
     | Exit Do {handleErrorNotImplemented($1.token.location, L"Exit Do");}
     | Exit While {handleErrorNotImplemented($1.token.location, L"Exit While");}
     | Exit For {handleErrorNotImplemented($1.token.location, L"Exit For");}
@@ -639,7 +840,27 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
     | Cast '(' type ',' expression ')' {$$ = ParserValueType(AST::CastExpression::make($1.token.location, dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<const AST::Type>($3.node), false));}
     | Exp '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Exp, dynamic_pointer_cast<AST::Expression>($3.node)));}
     | Hex '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::Hex, dynamic_pointer_cast<AST::Expression>($3.node)));}
-    | Id {const AST::Symbol &symbol = getSymbolGlobal(this, $1.token); if(symbol.stype() != AST::Symbol::Type::AutoVariable && symbol.stype() != AST::Symbol::Type::ReferenceVariable && symbol.stype() != AST::Symbol::Type::StaticVariable && symbol.stype() != AST::Symbol::Type::Procedure) ::handleError($1.token.location, $1.token.svalue + L" is not a variable or procedure"); $$ = ParserValueType(symbol.value);}
+    | Id
+    {
+        const AST::Symbol &symbol = getSymbolGlobal(this, $1.token);
+        switch(symbol.stype())
+        {
+        case AST::Symbol::Type::AutoVariable:
+        case AST::Symbol::Type::ReferenceVariable:
+        case AST::Symbol::Type::StaticVariable:
+        {
+            shared_ptr<AST::Variable> variable = dynamic_pointer_cast<AST::Variable>(symbol.value);
+            if(variable->containingProcedure() != nullptr && variable->containingProcedure() != getContainingProcedure(this))
+                ::handleError($1.token.location, L"can't access local variable from another procedure");
+            break;
+        }
+        case AST::Symbol::Type::Procedure:
+            break;
+        default:
+            ::handleError($1.token.location, $1.token.svalue + L" is not a variable or procedure");
+        }
+        $$ = ParserValueType(symbol.value);
+    }
     | toplevel_expression '(' expression_list ')'
     {
         vector<shared_ptr<AST::Expression>> expression_list;
@@ -696,10 +917,35 @@ fn_decl_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     | fn_decl_arg_list_non_empty {$$ = $1;}
     ;
 
-fn_decl_arg_list_non_empty: Id As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
-    | As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
-    | fn_decl_arg_list_non_empty ',' As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
-    | fn_decl_arg_list_non_empty ',' Id As type {handleErrorNotImplemented($1.token.location, L"procedure argument");}
+fn_decl_arg_list_non_empty: fn_decl_arg
+    {
+        $$ = $1;
+    }
+    | fn_decl_arg_list_non_empty ',' fn_decl_arg
+    {
+        $$ = $1;
+        $$.nodes.insert($$.nodes.end(), $3.nodes.begin(), $3.nodes.end());
+    }
+    ;
+
+fn_decl_arg: Id As type
+    {
+        shared_ptr<const AST::Type> argType = dynamic_pointer_cast<const AST::Type>($3.node);
+        shared_ptr<AST::Variable> variable;
+        if(argType->isLValue())
+        {
+            variable = AST::ReferenceVariable::make($1.token.location, nullptr, argType, $1.token.svalue, nullptr, true);
+        }
+        else
+        {
+            variable = AST::AutoVariable::make($1.token.location, nullptr, AST::TypeReference::toLValue(argType), $1.token.svalue, nullptr, true);
+        }
+        $$ = ParserValueType(vector<shared_ptr<const AST::Base>>{variable, argType});
+    }
+    | As type
+    {
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{nullptr, $2.node});
+    }
     ;
 
 fn_type_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
@@ -868,6 +1114,7 @@ public:
     }
     vector<shared_ptr<AST::SymbolTable>> symbolTableStack;
     Location lastTokenLocation;
+    vector<shared_ptr<AST::Procedure>> procedureStack;
 protected:
     virtual ParserValueType getToken() override
     {
@@ -895,6 +1142,30 @@ shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is)
     {
         throw ParserError(parser.lastTokenLocation, string_cast<wstring>(e.what()));
     }
+}
+
+shared_ptr<AST::Procedure> getContainingProcedure(ParserBase *parser)
+{
+    Parser *theParser = dynamic_cast<Parser *>(parser);
+    assert(theParser != nullptr);
+    if(theParser->procedureStack.empty())
+        return nullptr;
+    return theParser->procedureStack.back();
+}
+
+void pushContainingProcedure(ParserBase *parser, shared_ptr<AST::Procedure> procedure)
+{
+    Parser *theParser = dynamic_cast<Parser *>(parser);
+    assert(theParser != nullptr);
+    theParser->procedureStack.push_back(procedure);
+}
+
+void popContainingProcedure(ParserBase *parser)
+{
+    Parser *theParser = dynamic_cast<Parser *>(parser);
+    assert(theParser != nullptr);
+    assert(!theParser->procedureStack.empty());
+    theParser->procedureStack.pop_back();
 }
 
 %}

@@ -64,6 +64,7 @@ public:
         for(std::shared_ptr<const Type> arg : args)
         {
             ss << seperator << L"As " << arg->toString();
+            seperator = L", ";
         }
         ss << L")";
         if(getProcedureHasReturnValue(procedureType))

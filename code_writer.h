@@ -38,6 +38,7 @@ public:
     virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) = 0;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) = 0;
     virtual void visitOrExpression(std::shared_ptr<const AST::OrExpression> node) = 0;
+    virtual void visitProcedure(std::shared_ptr<const AST::Procedure> node) = 0;
     virtual void visitReferenceVariable(std::shared_ptr<const AST::ReferenceVariable> node) = 0;
     virtual void visitSingleLiteralExpression(std::shared_ptr<const AST::SingleLiteralExpression> node) = 0;
     virtual void visitStaticVariable(std::shared_ptr<const AST::StaticVariable> node) = 0;

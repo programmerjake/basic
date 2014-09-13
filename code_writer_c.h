@@ -7,18 +7,61 @@
 #include <string>
 #include <memory>
 #include <unordered_set>
+#include <unordered_map>
+#include <vector>
 
 class CodeWriterC final : public CodeWriter
 {
 private:
-    std::wstring createVariableName(std::wstring name)
+    std::unordered_map<std::wstring, std::unordered_map<std::shared_ptr<const AST::Variable>, size_t>> variableNamesMap;
+    std::unordered_map<std::wstring, std::unordered_map<std::shared_ptr<const AST::Procedure>, size_t>> procedureNamesMap;
+    std::wstring createVariableName(std::shared_ptr<const AST::Variable> variable)
     {
-        return L"v_" + name;
+        std::wstring name = variable->name();
+        if(name == AST::Variable::getReturnValueName())
+            return L"return_value";
+        std::wostringstream ss;
+        ss << L"v_" << name;
+        auto &m = variableNamesMap[name];
+        size_t index;
+        if(m.count(variable) == 0)
+        {
+            index = m.size();
+            m[variable] = index;
+        }
+        else
+        {
+            index = m[variable];
+        }
+        ss << L"_" << index;
+        return ss.str();
+    }
+    std::wstring createFunctionName(std::shared_ptr<const AST::Procedure> procedure)
+    {
+        std::wstring name = procedure->name();
+        std::wostringstream ss;
+        ss << L"fn_" << name;
+        auto &m = procedureNamesMap[name];
+        size_t index;
+        if(m.count(procedure) == 0)
+        {
+            index = m.size();
+            m[procedure] = index;
+        }
+        else
+        {
+            index = m[procedure];
+        }
+        ss << L"_" << index;
+        return ss.str();
     }
     std::shared_ptr<std::ostream> sourceStream;
     bool isOutermostCodeBlock = true;
     std::ostringstream mainCode;
     std::ostream *currentOutputStream;
+    const std::vector<std::shared_ptr<AST::Variable>> *functionArguments = nullptr;
+    std::vector<std::shared_ptr<AST::Base>> procedureList;
+    std::unordered_set<std::shared_ptr<AST::Base>> procedureSet;
     std::ostream &os()
     {
         return *currentOutputStream;
@@ -37,7 +80,7 @@ private:
     };
     Indenter indent;
     bool didIndent = false;
-    bool isDeclaration = false, isInitialization = false, isInitializer = false;
+    bool isDeclaration = false, isInitialization = false, isInitializer = false, isImplementation = false;
     std::string declarationTypeAfterVariable;
     bool canSkipSemicolon = false;
     size_t nextTempVariableIndex = 0;
@@ -76,6 +119,7 @@ public:
     virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) override;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) override;
     virtual void visitOrExpression(std::shared_ptr<const AST::OrExpression> node) override;
+    virtual void visitProcedure(std::shared_ptr<const AST::Procedure> node) override;
     virtual void visitReferenceVariable(std::shared_ptr<const AST::ReferenceVariable> node) override;
     virtual void visitSingleLiteralExpression(std::shared_ptr<const AST::SingleLiteralExpression> node) override;
     virtual void visitStaticVariable(std::shared_ptr<const AST::StaticVariable> node) override;
