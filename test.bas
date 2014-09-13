@@ -1,2 +1,2 @@
 Dim A as integer
-a = 65535_u16
+a = &H200_u16

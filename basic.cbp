@@ -62,6 +62,7 @@
 		<Unit filename="ast/neg_expression.h" />
 		<Unit filename="ast/not_expression.h" />
 		<Unit filename="ast/or_expression.h" />
+		<Unit filename="ast/procedure.h" />
 		<Unit filename="ast/statement.h" />
 		<Unit filename="ast/statements.cpp" />
 		<Unit filename="ast/sub_expression.h" />
