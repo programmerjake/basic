@@ -665,8 +665,10 @@ inlineStatement: expression_no_equals '=' expression
     | Exit Do {handleErrorNotImplemented($1.token.location, L"Exit Do");}
     | Exit While {handleErrorNotImplemented($1.token.location, L"Exit While");}
     | Exit For {handleErrorNotImplemented($1.token.location, L"Exit For");}
-    | Exit Sub {handleErrorNotImplemented($1.token.location, L"Exit Sub");}
-    | Exit Function {handleErrorNotImplemented($1.token.location, L"Exit Function");}
+    | Exit subOrFunction 
+    {
+        handleErrorNotImplemented($1.token.location, L"Exit " + $2.token.svalue);
+    }
     | expression_no_equals {$$ = $1;}
     ;
 
@@ -698,11 +700,6 @@ ifStatementInternal: If expression Then codeBlockWithNewLine
         shared_ptr<AST::IfStatement> s = dynamic_pointer_cast<AST::IfStatement>($$.node);
         s->ifSections.push_back(pair<shared_ptr<AST::Expression>, shared_ptr<AST::CodeBlock>>(dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::CodeBlock>($5.node)));
     }
-    ;
-
-elseSection:
-    | Else codeBlockWithNewLine {handleErrorNotImplemented($1.token);}
-    | ElseIf expression Then codeBlockWithNewLine elseSection {handleErrorNotImplemented($1.token);}
     ;
 
 expression: or_expression {$$ = $1;}

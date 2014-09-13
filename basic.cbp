@@ -50,6 +50,7 @@
 		<Unit filename="ast/code_block.h" />
 		<Unit filename="ast/compare_expression.h" />
 		<Unit filename="ast/do_statement.h" />
+		<Unit filename="ast/exit_statement.h" />
 		<Unit filename="ast/expression.h" />
 		<Unit filename="ast/expressions.cpp" />
 		<Unit filename="ast/fdiv_expression.h" />
