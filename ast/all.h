@@ -38,5 +38,7 @@
 #include "ast/procedure.h"
 #include "ast/call_expression.h"
 #include "ast/exit_statement.h"
+#include "ast/type_type.h"
+#include "ast/member_access_expression.h"
 
 #endif // ALL_H_INCLUDED

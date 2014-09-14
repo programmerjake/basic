@@ -59,6 +59,7 @@
 		<Unit filename="ast/if_statement.h" />
 		<Unit filename="ast/initialize_statement.h" />
 		<Unit filename="ast/literal_expression.h" />
+		<Unit filename="ast/member_access_expression.h" />
 		<Unit filename="ast/mod_expression.h" />
 		<Unit filename="ast/mul_expression.h" />
 		<Unit filename="ast/neg_expression.h" />
@@ -75,6 +76,7 @@
 		<Unit filename="ast/type_builtin.h" />
 		<Unit filename="ast/type_procedure.h" />
 		<Unit filename="ast/type_reference.h" />
+		<Unit filename="ast/type_type.h" />
 		<Unit filename="ast/unary_plus_expression.h" />
 		<Unit filename="ast/variable.h" />
 		<Unit filename="ast/while_statement.h" />
