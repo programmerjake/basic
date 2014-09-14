@@ -18,10 +18,10 @@ public:
     {
         return name_;
     }
-    bool isComplete;
 private:
-    TypeType(Location location, std::wstring name, std::shared_ptr<SymbolTable> symbols, bool isComplete)
-        : Type(location), name_(name), symbols(symbols), isComplete(isComplete)
+    bool isComplete_;
+    TypeType(Location location, std::wstring name, std::shared_ptr<SymbolTable> symbols, bool isComplete_)
+        : Type(location), name_(name), symbols(symbols), isComplete_(isComplete_)
     {
     }
 public:
@@ -31,7 +31,7 @@ public:
     }
     virtual bool canCastTo(std::shared_ptr<const Type> destType, bool isImplicitCast = true) const override
     {
-        return *this == destType;
+        return *this == *destType;
     }
     virtual bool operator ==(const Type &rt) const override
     {
@@ -48,7 +48,14 @@ public:
     {
         return name();
     }
-    #warning finish
+    virtual bool isComplete() const override
+    {
+        return isComplete_;
+    }
+    void isComplete(bool v)
+    {
+        isComplete_ = v;
+    }
 };
 }
 

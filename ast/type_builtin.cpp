@@ -659,4 +659,9 @@ void TypeEmpty::writeCode(CodeWriter &cw) const
 {
     cw.visitTypeEmpty(static_pointer_cast<const TypeEmpty>(shared_from_this()));
 }
+
+void TypeType::writeCode(CodeWriter &cw) const
+{
+    cw.visitTypeType(static_pointer_cast<const TypeType>(shared_from_this()));
+}
 }

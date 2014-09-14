@@ -286,6 +286,20 @@ void CodeWriterDump::visitIntegerLiteralExpression(shared_ptr<const AST::Integer
     os() << indent << "IntegerLiteral: " << string_cast<string>(node->toSourceString()) << "\n";
 }
 
+void CodeWriterDump::visitMemberAccessExpression(shared_ptr<const AST::MemberAccessExpression> node)
+{
+    os() << indent << "MemberAccess:\n";
+    os() << indent << "MemberAccess.Name: '" << string_cast<string>(node->memberName) << "'\n";
+    os() << indent << "MemberAccess.Type:\n";
+    indent.depth++;
+    node->type()->writeCode(*this);
+    indent.depth--;
+    os() << indent << "MemberAccess.Structure:\n";
+    indent.depth++;
+    node->args().front()->writeCode(*this);
+    indent.depth--;
+}
+
 void CodeWriterDump::visitModExpression(shared_ptr<const AST::ModExpression> node)
 {
     dumpExpression(node, "Mod");
@@ -485,6 +499,26 @@ void CodeWriterDump::visitTypeSingle(shared_ptr<const AST::TypeSingle> node)
 void CodeWriterDump::visitTypeString(shared_ptr<const AST::TypeString> node)
 {
     os() << indent << "TypeString\n";
+}
+
+void CodeWriterDump::visitTypeType(shared_ptr<const AST::TypeType> node)
+{
+    string nodeName = "TypeType";
+    os() << indent << nodeName << ": " << string_cast<string>(static_cast<wstring>(node->location())) << "\n";
+    os() << indent << nodeName << ".Name: " << string_cast<string>(node->name()) << "\n";
+    if(!std::get<1>(structures.insert(node)))
+        return;
+    os() << indent << nodeName << ".Symbols:\n";
+    indent.depth++;
+    for(const AST::Symbol &symbol : *node->symbols)
+    {
+        os() << indent << "Symbol:\n";
+        os() << indent << "Symbol.Name: " << string_cast<string>(symbol.name()) << "\n";
+        indent.depth++;
+        symbol.value->writeCode(*this);
+        indent.depth--;
+    }
+    indent.depth--;
 }
 
 void CodeWriterDump::visitTypeUInt16(shared_ptr<const AST::TypeUInt16> node)

@@ -9,12 +9,12 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <deque>
 
 class CodeWriterC final : public CodeWriter
 {
 private:
     std::unordered_map<std::wstring, std::unordered_map<std::shared_ptr<const AST::Variable>, size_t>> variableNamesMap;
-    std::unordered_map<std::wstring, std::unordered_map<std::shared_ptr<const AST::Procedure>, size_t>> procedureNamesMap;
     std::wstring createVariableName(std::shared_ptr<const AST::Variable> variable)
     {
         std::wstring name = variable->name();
@@ -36,6 +36,7 @@ private:
         ss << L"_" << index;
         return ss.str();
     }
+    std::unordered_map<std::wstring, std::unordered_map<std::shared_ptr<const AST::Procedure>, size_t>> procedureNamesMap;
     std::wstring createFunctionName(std::shared_ptr<const AST::Procedure> procedure)
     {
         std::wstring name = procedure->name();
@@ -55,6 +56,26 @@ private:
         ss << L"_" << index;
         return ss.str();
     }
+    std::unordered_map<std::wstring, std::unordered_map<std::shared_ptr<const AST::TypeType>, size_t>> structureNamesMap;
+    std::wstring createStructureName(std::shared_ptr<const AST::TypeType> type)
+    {
+        std::wstring name = type->name();
+        std::wostringstream ss;
+        ss << L"fn_" << name;
+        auto &m = structureNamesMap[name];
+        size_t index;
+        if(m.count(type) == 0)
+        {
+            index = m.size();
+            m[type] = index;
+        }
+        else
+        {
+            index = m[type];
+        }
+        ss << L"_" << index;
+        return ss.str();
+    }
     std::shared_ptr<std::ostream> sourceStream;
     bool isOutermostCodeBlock = true;
     std::ostringstream mainCode;
@@ -62,6 +83,7 @@ private:
     const std::vector<std::shared_ptr<AST::Variable>> *functionArguments = nullptr;
     std::vector<std::shared_ptr<AST::Base>> procedureList;
     std::unordered_set<std::shared_ptr<AST::Base>> procedureSet;
+    std::deque<std::shared_ptr<AST::Base>> newProcedures;
     std::ostream &os()
     {
         return *currentOutputStream;
@@ -128,8 +150,9 @@ public:
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) override;
     virtual void visitInitializeStatement(std::shared_ptr<const AST::InitializeStatement> node) override;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) override;
-    virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) override;
+    virtual void visitMemberAccessExpression(std::shared_ptr<const AST::MemberAccessExpression> node) override;
     virtual void visitModExpression(std::shared_ptr<const AST::ModExpression> node) override;
+    virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) override;
     virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) override;
     virtual void visitNotExpression(std::shared_ptr<const AST::NotExpression> node) override;
     virtual void visitOrExpression(std::shared_ptr<const AST::OrExpression> node) override;
@@ -152,6 +175,7 @@ public:
     virtual void visitTypeReference(std::shared_ptr<const AST::TypeReference> node) override;
     virtual void visitTypeSingle(std::shared_ptr<const AST::TypeSingle> node) override;
     virtual void visitTypeString(std::shared_ptr<const AST::TypeString> node) override;
+    virtual void visitTypeType(std::shared_ptr<const AST::TypeType> node) override;
     virtual void visitTypeUInt16(std::shared_ptr<const AST::TypeUInt16> node) override;
     virtual void visitTypeUInt32(std::shared_ptr<const AST::TypeUInt32> node) override;
     virtual void visitTypeUInt64(std::shared_ptr<const AST::TypeUInt64> node) override;

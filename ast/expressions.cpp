@@ -813,4 +813,9 @@ void CallExpression::writeCode(CodeWriter &cw) const
 {
     cw.visitCallExpression(static_pointer_cast<const CallExpression>(shared_from_this()));
 }
+
+void MemberAccessExpression::writeCode(CodeWriter &cw) const
+{
+    cw.visitMemberAccessExpression(static_pointer_cast<const MemberAccessExpression>(shared_from_this()));
+}
 }

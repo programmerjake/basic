@@ -38,6 +38,7 @@ public:
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) = 0;
     virtual void visitInitializeStatement(std::shared_ptr<const AST::InitializeStatement> node) = 0;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) = 0;
+    virtual void visitMemberAccessExpression(std::shared_ptr<const AST::MemberAccessExpression> node) = 0;
     virtual void visitModExpression(std::shared_ptr<const AST::ModExpression> node) = 0;
     virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) = 0;
     virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) = 0;
@@ -62,6 +63,7 @@ public:
     virtual void visitTypeReference(std::shared_ptr<const AST::TypeReference> node) = 0;
     virtual void visitTypeSingle(std::shared_ptr<const AST::TypeSingle> node) = 0;
     virtual void visitTypeString(std::shared_ptr<const AST::TypeString> node) = 0;
+    virtual void visitTypeType(std::shared_ptr<const AST::TypeType> node) = 0;
     virtual void visitTypeUInt16(std::shared_ptr<const AST::TypeUInt16> node) = 0;
     virtual void visitTypeUInt32(std::shared_ptr<const AST::TypeUInt32> node) = 0;
     virtual void visitTypeUInt64(std::shared_ptr<const AST::TypeUInt64> node) = 0;

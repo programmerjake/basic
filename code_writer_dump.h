@@ -29,6 +29,7 @@ private:
     Indenter indent;
     void dumpExpression(std::shared_ptr<const AST::Expression> node, std::string nodeName);
     std::unordered_set<std::shared_ptr<const AST::Procedure>> procedures;
+    std::unordered_set<std::shared_ptr<const AST::TypeType>> structures;
 public:
     CodeWriterDump(std::shared_ptr<std::ostream> dumpStream)
         : dumpStream(dumpStream)
@@ -57,6 +58,7 @@ public:
     virtual void visitIfStatement(std::shared_ptr<const AST::IfStatement> node) override;
     virtual void visitInitializeStatement(std::shared_ptr<const AST::InitializeStatement> node) override;
     virtual void visitIntegerLiteralExpression(std::shared_ptr<const AST::IntegerLiteralExpression> node) override;
+    virtual void visitMemberAccessExpression(std::shared_ptr<const AST::MemberAccessExpression> node) override;
     virtual void visitModExpression(std::shared_ptr<const AST::ModExpression> node) override;
     virtual void visitMulExpression(std::shared_ptr<const AST::MulExpression> node) override;
     virtual void visitNegExpression(std::shared_ptr<const AST::NegExpression> node) override;
@@ -81,6 +83,7 @@ public:
     virtual void visitTypeReference(std::shared_ptr<const AST::TypeReference> node) override;
     virtual void visitTypeSingle(std::shared_ptr<const AST::TypeSingle> node) override;
     virtual void visitTypeString(std::shared_ptr<const AST::TypeString> node) override;
+    virtual void visitTypeType(std::shared_ptr<const AST::TypeType> node) override;
     virtual void visitTypeUInt16(std::shared_ptr<const AST::TypeUInt16> node) override;
     virtual void visitTypeUInt32(std::shared_ptr<const AST::TypeUInt32> node) override;
     virtual void visitTypeUInt64(std::shared_ptr<const AST::TypeUInt64> node) override;

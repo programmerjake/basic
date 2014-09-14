@@ -225,22 +225,95 @@ program: codeBlock {$$ = $1;}
     | newLine codeBlock {$$ = $2;}
     ;
 
+getLocation: {$$ = peekToken;}
+    ;
+
 variableDeclaration: Dim {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     | Dim declarationPartList {$$ = $2;}
     ;
 
+typeStart: Type Id newLine
+    {
+        wstring name = $2.token.svalue;
+        Location location = $2.token.location;
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        shared_ptr<AST::TypeType> type;
+        if(sts.back()->exists(name))
+        {
+            AST::Symbol s = sts.back()->get(name);
+            if(s.stype() != AST::Symbol::Type::Type)
+                ::handleError(location, name + L" already defined");
+            type = dynamic_pointer_cast<AST::TypeType>(s.value);
+            if(type == nullptr)
+                ::handleError(location, name + L" already defined");
+        }
+        else
+        {
+            type = AST::TypeType::make(location, name, AST::SymbolTable::make(), false);
+            AST::Symbol s = AST::Symbol(name, AST::Symbol::Type::Type, type, type);
+            sts.back()->make(s);
+        }
+        if(type->isComplete())
+            ::handleError(location, name + L" already defined: " + static_cast<wstring>(type->location()));
+        sts.push_back(type->symbols);
+        $$ = ParserValueType(type);
+    }
+    ;
+
 declaration: variableDeclaration {$$ = $1;}
-    | Type Id newLine typeDefinitionBlock End Type {handleErrorNotImplemented($1.token);}
+    | typeStart typeDefinitionBlock End Type
+    {
+        shared_ptr<AST::TypeType> type = dynamic_pointer_cast<AST::TypeType>($1.node);
+        type->isComplete(true);
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        sts.pop_back();
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{});
+    }
+    | Declare Type Id
+    {
+        wstring name = $3.token.svalue;
+        Location location = $3.token.location;
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        shared_ptr<AST::TypeType> type;
+        if(sts.back()->exists(name))
+        {
+            AST::Symbol s = sts.back()->get(name);
+            if(s.stype() != AST::Symbol::Type::Type)
+                ::handleError(location, name + L" already defined");
+            type = dynamic_pointer_cast<AST::TypeType>(s.value);
+            if(type == nullptr)
+                ::handleError(location, name + L" already defined");
+        }
+        else
+        {
+            type = AST::TypeType::make(location, name, AST::SymbolTable::make(), false);
+            AST::Symbol s = AST::Symbol(name, AST::Symbol::Type::Type, type, type);
+            sts.back()->make(s);
+        }
+        $$ = ParserValueType(vector<shared_ptr<AST::Base>>{});
+    }
     | procedureDefinition {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     | procedureDeclaration {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     ;
 
 typeDefinitionBlock: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
-    | typeDefinitionPartList newLine {$$ = $1;}
+    | typeDefinitionBlock typeDefinitionPartList newLine {$$ = $1; $$.nodes.insert($$.nodes.end(), $2.nodes.begin(), $2.nodes.end());}
     ;
 
 typeDefinitionPartList: typeDefinitionPart {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});}
     | typeDefinitionPartList ',' typeDefinitionPart {$$ = $1; $$.nodes.push_back($1.node);}
+    ;
+
+variableType: getLocation type
+    {
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($2.node);
+        if(!type->isComplete())
+            ::handleError($1.token.location, L"can't use incomplete type here");
+        $$ = $2;
+    }
     ;
 
 procedureStart: Sub Id '(' fn_decl_arg_list ')'
@@ -294,8 +367,11 @@ procedureStart: Sub Id '(' fn_decl_arg_list ')'
         $$ = ParserValueType(procedure);
         $$.token = $1.token;
         pushContainingProcedure(this, procedure);
+        getDoStatementStack(this).push_back(nullptr);
+        getForStatementStack(this).push_back(nullptr);
+        getWhileStatementStack(this).push_back(nullptr);
     }
-    | Function Id '(' fn_decl_arg_list ')' As type
+    | Function Id '(' fn_decl_arg_list ')' As variableType
     {
         wstring name = $2.token.svalue;
         Location location = $2.token.location;
@@ -350,6 +426,9 @@ procedureStart: Sub Id '(' fn_decl_arg_list ')'
         $$ = ParserValueType(procedure);
         $$.token = $1.token;
         pushContainingProcedure(this, procedure);
+        getDoStatementStack(this).push_back(nullptr);
+        getForStatementStack(this).push_back(nullptr);
+        getWhileStatementStack(this).push_back(nullptr);
     }
     ;
 
@@ -365,6 +444,9 @@ procedureDefinition: procedureStart codeBlockWithNewLine End subOrFunction
         if($1.token.type != $4.token.type)
             ::handleError($4.token.location, L"expected: " + $1.token.svalue);
         popContainingProcedure(this);
+        getDoStatementStack(this).pop_back();
+        getForStatementStack(this).pop_back();
+        getWhileStatementStack(this).pop_back();
     }
     ;
 
@@ -399,7 +481,7 @@ procedureDeclaration: Declare Sub Id '(' fn_decl_arg_list ')'
             sts.back()->make(s);
         }
     }
-    | Declare Function Id '(' fn_decl_arg_list ')' As type
+    | Declare Function Id '(' fn_decl_arg_list ')' As variableType
     {
         wstring name = $3.token.svalue;
         Location location = $3.token.location;
@@ -432,7 +514,29 @@ procedureDeclaration: Declare Sub Id '(' fn_decl_arg_list ')'
     }
     ;
 
-typeDefinitionPart: Id As type {handleErrorNotImplemented($1.token.location, L"Type");}
+typeDefinitionPart: Id As variableType
+    {
+        shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
+        wstring name = $1.token.svalue;
+        Location location = $1.token.location;
+        shared_ptr<AST::Variable> variable;
+        AST::Symbol::Type stype;
+        if(type->isLValue())
+        {
+            ::handleError(location, L"ByRef variable must have initializer");
+        }
+        else
+        {
+            type = AST::TypeReference::make(location, type);
+            variable = AST::AutoVariable::make(location, nullptr, type, name, nullptr);
+            stype = AST::Symbol::Type::AutoVariable;
+        }
+        vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
+        assert(!sts.empty());
+        if(sts.back()->exists(name))
+            ::handleError(location, name + L" already defined");
+        sts.back()->make(AST::Symbol(name, stype, type, variable));
+    }
     | procedureDefinition {$$ = $1;}
     ;
 
@@ -444,7 +548,7 @@ declarationPart: declarationPartWithInitializer
     {
         $$ = ParserValueType(vector<shared_ptr<AST::Base>>{$1.node});
     }
-    | Id As type
+    | Id As variableType
     {
         shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
         wstring name = $1.token.svalue;
@@ -497,7 +601,7 @@ declarationPartWithInitializer: Id '=' expression
         sts.back()->make(AST::Symbol(name, stype, type, variable));
         $$ = ParserValueType(AST::InitializeStatement::make(variable));
     }
-    | Id As type '=' expression
+    | Id As variableType '=' expression
     {
         shared_ptr<const AST::Type> type = dynamic_pointer_cast<const AST::Type>($3.node);
         wstring name = $1.token.svalue;
@@ -961,6 +1065,10 @@ toplevel_expression: StringLiteral {$$ = ParserValueType(AST::StringLiteralExpre
             $$ = ParserValueType(AST::CallExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), expression_list));
         }
     }
+    | toplevel_expression '.' Id
+    {
+        $$ = ParserValueType(AST::MemberAccessExpression::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), $3.token.svalue));
+    }
     | InStr '(' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr2, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node)));}
     | InStr '(' expression ',' expression ',' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::InStr3, dynamic_pointer_cast<AST::Expression>($3.node), dynamic_pointer_cast<AST::Expression>($5.node), dynamic_pointer_cast<AST::Expression>($7.node)));}
     | LBound '(' expression ')' {$$ = ParserValueType(AST::BuiltInFunctionExpression::make($1.token.location, AST::BuiltInFunctionExpression::FnType::LBound1, dynamic_pointer_cast<AST::Expression>($3.node)));}
@@ -1011,7 +1119,7 @@ fn_decl_arg_list_non_empty: fn_decl_arg
     }
     ;
 
-fn_decl_arg: Id As type
+fn_decl_arg: Id As variableType
     {
         shared_ptr<const AST::Type> argType = dynamic_pointer_cast<const AST::Type>($3.node);
         shared_ptr<AST::Variable> variable;
@@ -1025,7 +1133,7 @@ fn_decl_arg: Id As type
         }
         $$ = ParserValueType(vector<shared_ptr<const AST::Base>>{variable, argType});
     }
-    | As type
+    | As variableType
     {
         $$ = ParserValueType(vector<shared_ptr<AST::Base>>{nullptr, $2.node});
     }
@@ -1035,10 +1143,10 @@ fn_type_arg_list: {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{});}
     | fn_type_arg_list_non_empty {$$ = $1;}
     ;
 
-fn_type_arg_list_non_empty: Id As type {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$3.node});}
-    | As type {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$2.node});}
-    | fn_type_arg_list_non_empty ',' Id As type {$$ = $1; $$.nodes.push_back($5.node);}
-    | fn_type_arg_list_non_empty ',' As type {$$ = $1; $$.nodes.push_back($4.node);}
+fn_type_arg_list_non_empty: Id As variableType {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$3.node});}
+    | As variableType {$$ = ParserValueType(vector<shared_ptr<AST::Base>>{$2.node});}
+    | fn_type_arg_list_non_empty ',' Id As variableType {$$ = $1; $$.nodes.push_back($5.node);}
+    | fn_type_arg_list_non_empty ',' As variableType {$$ = $1; $$.nodes.push_back($4.node);}
     ;
 
 type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
@@ -1061,11 +1169,11 @@ type: Boolean {$$ = ParserValueType(AST::TypeBoolean::getInstance());}
         shared_ptr<AST::TypeArray> ta = dynamic_pointer_cast<AST::TypeArray>($3.node);
         $$ = ParserValueType(AST::TypeArray::make($1.token.location, dynamic_pointer_cast<const AST::Type>($6.node), ta->indexRanges()));
     }
-    | Array Of type
+    | Array Of variableType
     {
         $$ = ParserValueType(AST::TypeArray::make($1.token.location, dynamic_pointer_cast<const AST::Type>($3.node), vector<AST::TypeArray::IndexRange>{AST::TypeArray::defaultEmptyRange}));
     }
-    | Function '(' fn_type_arg_list ')' As type
+    | Function '(' fn_type_arg_list ')' As variableType
     {
         vector<shared_ptr<const AST::Type>> args;
         args.reserve($3.nodes.size());
@@ -1108,7 +1216,6 @@ signedIntegerLiteral: IntegerLiteral
         $$ = ParserValueType(AST::IntegerLiteralExpression::make($1.token.location, L"-" + $2.token.svalue, ::handleError));
     }
     ;
-
 
 arrayIndexRanges:
     {

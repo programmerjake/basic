@@ -986,6 +986,50 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         case AST::Symbol::Type::AutoVariable:
         case AST::Symbol::Type::ReferenceVariable:
         case AST::Symbol::Type::StaticVariable:
+        case AST::Symbol::Type::Procedure:
+            break;
+        case AST::Symbol::Type::Type:
+        {
+            shared_ptr<const AST::TypeType> type = dynamic_pointer_cast<const AST::TypeType>(symbol.value);
+            assert(type != nullptr);
+            if(!didIndent)
+                os() << indent;
+            didIndent = true;
+            os() << "struct " << string_cast<string>(createStructureName(type)) << ";\n";
+            didIndent = false;
+            isDeclaration = false;
+            break;
+        }
+        default:
+            throw runtime_error("can't declare symbol " + string_cast<string>(symbol.name()));
+        }
+    }
+    for(const AST::Symbol &symbol : *node->symbols)
+    {
+        switch(symbol.stype())
+        {
+        case AST::Symbol::Type::AutoVariable:
+        case AST::Symbol::Type::ReferenceVariable:
+        case AST::Symbol::Type::StaticVariable:
+        case AST::Symbol::Type::Procedure:
+            break;
+        case AST::Symbol::Type::Type:
+            isImplementation = true;
+            symbol.value->writeCode(*this);
+            didIndent = false;
+            isImplementation = false;
+            break;
+        default:
+            throw runtime_error("can't declare symbol " + string_cast<string>(symbol.name()));
+        }
+    }
+    for(const AST::Symbol &symbol : *node->symbols)
+    {
+        switch(symbol.stype())
+        {
+        case AST::Symbol::Type::AutoVariable:
+        case AST::Symbol::Type::ReferenceVariable:
+        case AST::Symbol::Type::StaticVariable:
             isDeclaration = true;
             symbol.value->writeCode(*this);
             os() << ";\n";
@@ -993,20 +1037,29 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
             isDeclaration = false;
             break;
         case AST::Symbol::Type::Procedure:
-            isDeclaration = true;
-            symbol.value->writeCode(*this);
-            os() << ";\n";
-            didIndent = false;
-            isDeclaration = false;
             if(std::get<1>(procedureSet.insert(symbol.value)))
+            {
                 procedureList.push_back(symbol.value);
+                newProcedures.push_back(symbol.value);
+            }
+            break;
+        case AST::Symbol::Type::Type:
             break;
         default:
-            throw runtime_error("can't declare symbol ");
+            throw runtime_error("can't declare symbol " + string_cast<string>(symbol.name()));
         }
     }
     if(isOutermostCodeBlock)
     {
+        while(!newProcedures.empty())
+        {
+            isDeclaration = true;
+            newProcedures.front()->writeCode(*this);
+            newProcedures.pop_front();
+            os() << ";\n";
+            didIndent = false;
+            isDeclaration = false;
+        }
         currentOutputStream = &mainCode;
         indent.depth = 1;
         didIndent = false;
@@ -1023,6 +1076,15 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
     }
     if(isOutermostCodeBlock)
     {
+        while(!newProcedures.empty())
+        {
+            isDeclaration = true;
+            newProcedures.front()->writeCode(*this);
+            newProcedures.pop_front();
+            os() << ";\n";
+            didIndent = false;
+            isDeclaration = false;
+        }
         currentOutputStream = sourceStream.get();
         indent.depth = 0;
         os() << indent << "int main()\n";
@@ -1035,6 +1097,15 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "\n";
         for(size_t i = 0; i < procedureList.size(); i++)
         {
+            while(!newProcedures.empty())
+            {
+                isDeclaration = true;
+                newProcedures.front()->writeCode(*this);
+                newProcedures.pop_front();
+                os() << ";\n";
+                didIndent = false;
+                isDeclaration = false;
+            }
             isImplementation = true;
             canSkipSemicolon = false;
             procedureList[i]->writeCode(*this);
@@ -1348,6 +1419,50 @@ void CodeWriterC::visitIntegerLiteralExpression(shared_ptr<const AST::IntegerLit
     os() << string_cast<string>(node->toCString());
 }
 
+void CodeWriterC::visitMemberAccessExpression(shared_ptr<const AST::MemberAccessExpression> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    AST::Symbol symbol = AST::MemberAccessExpression::getMember(node->location(), node->args().front()->type(), node->memberName);
+    switch(symbol.stype())
+    {
+    case AST::Symbol::Type::AutoVariable:
+    case AST::Symbol::Type::StaticVariable:
+    {
+        shared_ptr<AST::Variable> variable = dynamic_pointer_cast<AST::Variable>(symbol.value);
+        os() << "&(";
+        node->args().front()->writeCode(*this);
+        os() << ")";
+        if(node->args().front()->type()->isLValue())
+            os() << "->";
+        else
+            os() << ".";
+        os() << string_cast<string>(createVariableName(variable));
+        break;
+    }
+    case AST::Symbol::Type::ReferenceVariable:
+    {
+        shared_ptr<AST::Variable> variable = dynamic_pointer_cast<AST::Variable>(symbol.value);
+        os() << "(";
+        node->args().front()->writeCode(*this);
+        os() << ")";
+        if(node->args().front()->type()->isLValue())
+            os() << "->";
+        else
+            os() << ".";
+        os() << string_cast<string>(createVariableName(variable));
+        break;
+    }
+    case AST::Symbol::Type::Procedure:
+    {
+        throw logic_error("implement variable.procedure");
+    }
+    default:
+        assert(false);
+    }
+}
+
 void CodeWriterC::visitModExpression(shared_ptr<const AST::ModExpression> node)
 {
     if(!didIndent)
@@ -1431,8 +1546,8 @@ void CodeWriterC::visitProcedure(shared_ptr<const AST::Procedure> node)
         functionArguments = &node->args();
         node->type()->writeCode(*this);
         functionArguments = nullptr;
-        os() << string_cast<string>(createFunctionName(node)) << declarationTypeAfterVariable;
         isImplementation = false;
+        os() << string_cast<string>(createFunctionName(node)) << declarationTypeAfterVariable;
         isDeclaration = false;
         if(node->code != nullptr)
         {
@@ -1835,7 +1950,10 @@ void CodeWriterC::visitTypeProcedure(shared_ptr<const AST::TypeProcedure> node)
         break;
     case AST::TypeProcedure::ProcedureType::Function:
     {
+        bool temp = isImplementation;
+        isImplementation = false;
         node->returnType->writeCode(*this);
+        isImplementation = temp;
         os() << " ";
         break;
     }
@@ -1854,10 +1972,13 @@ void CodeWriterC::visitTypeProcedure(shared_ptr<const AST::TypeProcedure> node)
     size_t index = 0;
     for(shared_ptr<const AST::Type> arg : node->args)
     {
+        bool temp = isImplementation;
+        isImplementation = false;
         os() << seperator;
         seperator = ", ";
         declarationTypeAfterVariable = "";
         arg->writeCode(*this);
+        isImplementation = temp;
         isDeclaration = true;
         if(isImplementation && (index < functionArguments->size() && functionArguments->at(index) != nullptr))
         {
@@ -1865,6 +1986,7 @@ void CodeWriterC::visitTypeProcedure(shared_ptr<const AST::TypeProcedure> node)
         }
         os() << declarationTypeAfterVariable;
         index++;
+
     }
     os() << ")" << temp;
     currentOutputStream = outsideStream;
@@ -1912,6 +2034,99 @@ void CodeWriterC::visitTypeString(shared_ptr<const AST::TypeString> node)
         os() << "wstring(L\"\")";
     else
         os() << "wstring";
+}
+
+void CodeWriterC::visitTypeType(shared_ptr<const AST::TypeType> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "struct " << string_cast<string>(createStructureName(node));
+    if(isInitializer)
+    {
+        os() << "()";
+        return;
+    }
+    if(!isImplementation)
+        return;
+    os() << "\n";
+    os() << indent << "{\n";
+    didIndent = false;
+    indent.depth++;
+    isImplementation = false;
+    for(const AST::Symbol &symbol : *node->symbols)
+    {
+        switch(symbol.stype())
+        {
+        case AST::Symbol::Type::AutoVariable:
+        case AST::Symbol::Type::ReferenceVariable:
+        case AST::Symbol::Type::StaticVariable:
+        case AST::Symbol::Type::Procedure:
+            break;
+        case AST::Symbol::Type::Type:
+        {
+            shared_ptr<const AST::TypeType> type = dynamic_pointer_cast<const AST::TypeType>(symbol.value);
+            assert(type != nullptr);
+            if(!didIndent)
+                os() << indent;
+            didIndent = true;
+            os() << "struct " << string_cast<string>(createStructureName(type)) << ";\n";
+            didIndent = false;
+            isDeclaration = false;
+            break;
+        }
+        default:
+            throw runtime_error("can't declare symbol " + string_cast<string>(symbol.name()));
+        }
+    }
+    for(const AST::Symbol &symbol : *node->symbols)
+    {
+        switch(symbol.stype())
+        {
+        case AST::Symbol::Type::AutoVariable:
+        case AST::Symbol::Type::ReferenceVariable:
+        case AST::Symbol::Type::StaticVariable:
+        case AST::Symbol::Type::Procedure:
+            break;
+        case AST::Symbol::Type::Type:
+            isImplementation = true;
+            symbol.value->writeCode(*this);
+            didIndent = false;
+            isImplementation = false;
+            break;
+        default:
+            throw runtime_error("can't declare symbol " + string_cast<string>(symbol.name()));
+        }
+    }
+    for(const AST::Symbol &symbol : *node->symbols)
+    {
+        switch(symbol.stype())
+        {
+        case AST::Symbol::Type::AutoVariable:
+        case AST::Symbol::Type::ReferenceVariable:
+        case AST::Symbol::Type::StaticVariable:
+            isDeclaration = true;
+            symbol.value->writeCode(*this);
+            os() << ";\n";
+            didIndent = false;
+            isDeclaration = false;
+            break;
+        case AST::Symbol::Type::Procedure:
+            if(std::get<1>(procedureSet.insert(symbol.value)))
+            {
+                procedureList.push_back(symbol.value);
+                newProcedures.push_back(symbol.value);
+            }
+            break;
+       case AST::Symbol::Type::Type:
+            break;
+        default:
+            throw runtime_error("can't declare symbol " + string_cast<string>(symbol.name()));
+        }
+    }
+    indent.depth--;
+    os() << indent << "};\n";
+    isImplementation = true;
 }
 
 void CodeWriterC::visitTypeUInt16(shared_ptr<const AST::TypeUInt16> node)
