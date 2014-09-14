@@ -1098,6 +1098,8 @@ void CodeWriterC::visitDoStatement(shared_ptr<const AST::DoStatement> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
+    string exitLabel = makeLabel();
+    doStatementExitLabelMap[node] = exitLabel;
     switch(node->conditionType)
     {
     case AST::DoStatement::ConditionType::None:
@@ -1144,6 +1146,7 @@ void CodeWriterC::visitDoStatement(shared_ptr<const AST::DoStatement> node)
         didIndent = false;
         break;
     }
+    os() << indent << exitLabel << ": ;\n";
 }
 
 void CodeWriterC::visitDoubleLiteralExpression(shared_ptr<const AST::DoubleLiteralExpression> node)
@@ -1171,6 +1174,41 @@ void CodeWriterC::visitDoubleLiteralExpression(shared_ptr<const AST::DoubleLiter
     os() << str;
 }
 
+void CodeWriterC::visitExitDoStatement(shared_ptr<const AST::ExitDoStatement> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "goto " << doStatementExitLabelMap[node->statement];
+}
+
+void CodeWriterC::visitExitForStatement(shared_ptr<const AST::ExitForStatement> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "goto " << forStatementExitLabelMap[node->statement];
+}
+
+void CodeWriterC::visitExitWhileStatement(shared_ptr<const AST::ExitWhileStatement> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    os() << "goto " << whileStatementExitLabelMap[node->statement];
+}
+
+void CodeWriterC::visitExitProcedureStatement(shared_ptr<const AST::ExitProcedureStatement> node)
+{
+    if(!didIndent)
+        os() << indent;
+    didIndent = true;
+    if(AST::TypeProcedure::getProcedureHasReturnValue(node->procedure->type()->procedureType))
+        os() << "return " << string_cast<string>(createVariableName(node->procedure->returnValue));
+    else
+        os() << "return";
+}
+
 void CodeWriterC::visitFDivExpression(shared_ptr<const AST::FDivExpression> node)
 {
     if(!didIndent)
@@ -1191,6 +1229,8 @@ void CodeWriterC::visitForStatement(shared_ptr<const AST::ForStatement> node)
     if(!didIndent)
         os() << indent;
     didIndent = true;
+    string exitLabel = makeLabel();
+    forStatementExitLabelMap[node] = exitLabel;
     string variableRefTemp = makeTempVariable();
     string endTemp = makeTempVariable();
     string stepTemp = makeTempVariable();
@@ -1246,6 +1286,7 @@ void CodeWriterC::visitForStatement(shared_ptr<const AST::ForStatement> node)
     node->body->writeCode(*this);
     indent.depth--;
     os() << indent << "}\n";
+    os() << indent << exitLabel << ": ;\n";
     didIndent = false;
     canSkipSemicolon = true;
 }
@@ -1933,11 +1974,14 @@ void CodeWriterC::visitWhileStatement(shared_ptr<const AST::WhileStatement> node
     if(!didIndent)
         os() << indent;
     didIndent = true;
+    string exitLabel = makeLabel();
+    whileStatementExitLabelMap[node] = exitLabel;
     os() << "while(";
     node->condition->writeCode(*this);
     os() << ")\n";
     didIndent = false;
     node->body->writeCode(*this);
+    os() << indent << exitLabel << ": ;\n";
 }
 
 void CodeWriterC::visitXorExpression(shared_ptr<const AST::XorExpression> node)

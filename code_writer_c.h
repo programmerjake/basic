@@ -83,13 +83,22 @@ private:
     bool isDeclaration = false, isInitialization = false, isInitializer = false, isImplementation = false;
     std::string declarationTypeAfterVariable;
     bool canSkipSemicolon = false;
-    size_t nextTempVariableIndex = 0;
+    size_t nextTempVariableIndex = 0, nextLabelIndex = 0;
     std::string makeTempVariable()
     {
         std::ostringstream ss;
         ss << "t_" << nextTempVariableIndex++;
         return ss.str();
     }
+    std::string makeLabel()
+    {
+        std::ostringstream ss;
+        ss << "l_" << nextLabelIndex++;
+        return ss.str();
+    }
+    std::unordered_map<std::shared_ptr<const AST::DoStatement>, std::string> doStatementExitLabelMap;
+    std::unordered_map<std::shared_ptr<const AST::ForStatement>, std::string> forStatementExitLabelMap;
+    std::unordered_map<std::shared_ptr<const AST::WhileStatement>, std::string> whileStatementExitLabelMap;
     void writeInitializer(std::shared_ptr<const AST::Variable> node);
 public:
     CodeWriterC(std::shared_ptr<std::ostream> sourceStream)
@@ -109,6 +118,10 @@ public:
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) override;
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) override;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) override;
+    virtual void visitExitDoStatement(std::shared_ptr<const AST::ExitDoStatement> node) override;
+    virtual void visitExitForStatement(std::shared_ptr<const AST::ExitForStatement> node) override;
+    virtual void visitExitWhileStatement(std::shared_ptr<const AST::ExitWhileStatement> node) override;
+    virtual void visitExitProcedureStatement(std::shared_ptr<const AST::ExitProcedureStatement> node) override;
     virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) override;
     virtual void visitForStatement(std::shared_ptr<const AST::ForStatement> node) override;
     virtual void visitIDivExpression(std::shared_ptr<const AST::IDivExpression> node) override;

@@ -193,6 +193,26 @@ void CodeWriterDump::visitDoubleLiteralExpression(shared_ptr<const AST::DoubleLi
     os() << indent << "DoubleLiteral: " << string_cast<string>(node->toSourceString()) << "\n";
 }
 
+void CodeWriterDump::visitExitDoStatement(shared_ptr<const AST::ExitDoStatement> node)
+{
+    os() << indent << "ExitDo\n";
+}
+
+void CodeWriterDump::visitExitForStatement(shared_ptr<const AST::ExitForStatement> node)
+{
+    os() << indent << "ExitFor\n";
+}
+
+void CodeWriterDump::visitExitWhileStatement(shared_ptr<const AST::ExitWhileStatement> node)
+{
+    os() << indent << "ExitWhile\n";
+}
+
+void CodeWriterDump::visitExitProcedureStatement(shared_ptr<const AST::ExitProcedureStatement> node)
+{
+    os() << indent << "ExitProcedure\n";
+}
+
 void CodeWriterDump::visitFDivExpression(shared_ptr<const AST::FDivExpression> node)
 {
     dumpExpression(node, "FDiv");

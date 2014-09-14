@@ -18,17 +18,18 @@ public:
     std::shared_ptr<Expression> end;
     std::shared_ptr<Expression> step;
     std::shared_ptr<CodeBlock> body;
-private:
     void calcTypes(); // in statements.cpp
-    ForStatement(Location location, std::shared_ptr<Expression> variable, std::shared_ptr<Expression> start, std::shared_ptr<Expression> end, std::shared_ptr<Expression> step, std::shared_ptr<CodeBlock> body)
+private:
+    ForStatement(Location location, std::shared_ptr<Expression> variable, std::shared_ptr<Expression> start, std::shared_ptr<Expression> end, std::shared_ptr<Expression> step, std::shared_ptr<CodeBlock> body, bool skipCalcTypes)
         : Statement(location), variable(variable), start(start), end(end), step(step), body(body)
     {
-        calcTypes();
+        if(!skipCalcTypes)
+            calcTypes();
     }
 public:
-    static std::shared_ptr<ForStatement> make(Location location, std::shared_ptr<Expression> variable, std::shared_ptr<Expression> start, std::shared_ptr<Expression> end, std::shared_ptr<Expression> step, std::shared_ptr<CodeBlock> body)
+    static std::shared_ptr<ForStatement> make(Location location, std::shared_ptr<Expression> variable, std::shared_ptr<Expression> start, std::shared_ptr<Expression> end, std::shared_ptr<Expression> step, std::shared_ptr<CodeBlock> body, bool skipCalcTypes = false)
     {
-        return std::shared_ptr<ForStatement>(new ForStatement(location, variable, start, end, step, body));
+        return std::shared_ptr<ForStatement>(new ForStatement(location, variable, start, end, step, body, skipCalcTypes));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
 };

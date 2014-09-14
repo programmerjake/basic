@@ -28,6 +28,10 @@ public:
     virtual void visitCompareExpression(std::shared_ptr<const AST::CompareExpression> node) = 0;
     virtual void visitDoStatement(std::shared_ptr<const AST::DoStatement> node) = 0;
     virtual void visitDoubleLiteralExpression(std::shared_ptr<const AST::DoubleLiteralExpression> node) = 0;
+    virtual void visitExitDoStatement(std::shared_ptr<const AST::ExitDoStatement> node) = 0;
+    virtual void visitExitForStatement(std::shared_ptr<const AST::ExitForStatement> node) = 0;
+    virtual void visitExitWhileStatement(std::shared_ptr<const AST::ExitWhileStatement> node) = 0;
+    virtual void visitExitProcedureStatement(std::shared_ptr<const AST::ExitProcedureStatement> node) = 0;
     virtual void visitFDivExpression(std::shared_ptr<const AST::FDivExpression> node) = 0;
     virtual void visitForStatement(std::shared_ptr<const AST::ForStatement> node) = 0;
     virtual void visitIDivExpression(std::shared_ptr<const AST::IDivExpression> node) = 0;

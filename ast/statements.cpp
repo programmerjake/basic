@@ -90,4 +90,24 @@ void Procedure::writeCode(CodeWriter &cw) const
 {
     cw.visitProcedure(static_pointer_cast<const Procedure>(shared_from_this()));
 }
+
+void ExitDoStatement::writeCode(CodeWriter &cw) const
+{
+    cw.visitExitDoStatement(static_pointer_cast<const ExitDoStatement>(shared_from_this()));
+}
+
+void ExitForStatement::writeCode(CodeWriter &cw) const
+{
+    cw.visitExitForStatement(static_pointer_cast<const ExitForStatement>(shared_from_this()));
+}
+
+void ExitWhileStatement::writeCode(CodeWriter &cw) const
+{
+    cw.visitExitWhileStatement(static_pointer_cast<const ExitWhileStatement>(shared_from_this()));
+}
+
+void ExitProcedureStatement::writeCode(CodeWriter &cw) const
+{
+    cw.visitExitProcedureStatement(static_pointer_cast<const ExitProcedureStatement>(shared_from_this()));
+}
 }

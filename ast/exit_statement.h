@@ -34,7 +34,6 @@ public:
         return std::shared_ptr<ExitDoStatement>(new ExitDoStatement(location, statement));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
-    #warning finish
 };
 
 class ExitForStatement final : public ExitStatement
@@ -52,7 +51,6 @@ public:
         return std::shared_ptr<ExitForStatement>(new ExitForStatement(location, statement));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
-    #warning finish
 };
 
 class ExitWhileStatement final : public ExitStatement
@@ -70,7 +68,6 @@ public:
         return std::shared_ptr<ExitWhileStatement>(new ExitWhileStatement(location, statement));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
-    #warning finish
 };
 
 class ExitProcedureStatement final : public ExitStatement
@@ -88,7 +85,6 @@ public:
         return std::shared_ptr<ExitProcedureStatement>(new ExitProcedureStatement(location, procedure));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
-    #warning finish
 };
 }
 

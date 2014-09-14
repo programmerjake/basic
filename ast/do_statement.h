@@ -35,6 +35,11 @@ public:
         return std::shared_ptr<DoStatement>(new DoStatement(location, condition, conditionType, body));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
+    void setCondition(std::shared_ptr<Expression> condition, ConditionType conditionType)
+    {
+        this->condition = (condition ? CastExpression::castImplicit(condition, TypeBoolean::getInstance()) : nullptr);
+        this->conditionType = conditionType;
+    }
 };
 }
 

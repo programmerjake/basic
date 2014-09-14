@@ -106,6 +106,9 @@ shared_ptr<AST::CodeBlock> parseAll(shared_ptr<InputStream> is);
 shared_ptr<AST::Procedure> getContainingProcedure(ParserBase *parser);
 void pushContainingProcedure(ParserBase *parser, shared_ptr<AST::Procedure> procedure);
 void popContainingProcedure(ParserBase *parser);
+vector<shared_ptr<AST::DoStatement>> &getDoStatementStack(ParserBase *parser);
+vector<shared_ptr<AST::ForStatement>> &getForStatementStack(ParserBase *parser);
+vector<shared_ptr<AST::WhileStatement>> &getWhileStatementStack(ParserBase *parser);
 
 %}
 %option SymbolPrefix "TokenType::TT"
@@ -554,65 +557,99 @@ inlineStatementList: inlineStatement {$$ = ParserValueType(vector<shared_ptr<AST
     | inlineStatementList ':' inlineStatement {$$ = $1; $$.nodes.push_back($3.node);}
     ;
 
+doStatementStart: Do
+    {
+        $$ = $1;
+        getDoStatementStack(this).push_back(AST::DoStatement::make($1.token.location, nullptr, AST::DoStatement::ConditionType::None, nullptr));
+    }
+    ;
+
+whileStatementStart: While
+    {
+        $$ = $1;
+        getWhileStatementStack(this).push_back(AST::WhileStatement::make($1.token.location, nullptr, nullptr));
+    }
+    ;
+
+forStatementStart: For
+    {
+        $$ = $1;
+        getForStatementStack(this).push_back(AST::ForStatement::make($1.token.location, nullptr, nullptr, nullptr, nullptr, nullptr, true));
+    }
+    ;
+
 statement: ifStatement {$$ = $1;}
-    | Do While expression codeBlockWithNewLine Loop
+    | doStatementStart While expression codeBlockWithNewLine Loop
     {
-        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
-                                                       dynamic_pointer_cast<AST::Expression>($3.node),
-                                                       AST::DoStatement::ConditionType::DoWhile,
-                                                       dynamic_pointer_cast<AST::CodeBlock>($4.node)));
+        shared_ptr<AST::DoStatement> statement = getDoStatementStack(this).back();
+        getDoStatementStack(this).pop_back();
+        statement->setCondition(dynamic_pointer_cast<AST::Expression>($3.node), AST::DoStatement::ConditionType::DoWhile);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($4.node);
+        $$ = ParserValueType(statement);
     }
-    | Do Until expression codeBlockWithNewLine Loop
+    | doStatementStart Until expression codeBlockWithNewLine Loop
     {
-        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
-                                                       dynamic_pointer_cast<AST::Expression>($3.node),
-                                                       AST::DoStatement::ConditionType::DoUntil,
-                                                       dynamic_pointer_cast<AST::CodeBlock>($4.node)));
+        shared_ptr<AST::DoStatement> statement = getDoStatementStack(this).back();
+        getDoStatementStack(this).pop_back();
+        statement->setCondition(dynamic_pointer_cast<AST::Expression>($3.node), AST::DoStatement::ConditionType::DoUntil);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($4.node);
+        $$ = ParserValueType(statement);
     }
-    | Do codeBlockWithNewLine Loop While expression
+    | doStatementStart codeBlockWithNewLine Loop While expression
     {
-        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
-                                                       dynamic_pointer_cast<AST::Expression>($5.node),
-                                                       AST::DoStatement::ConditionType::LoopWhile,
-                                                       dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+        shared_ptr<AST::DoStatement> statement = getDoStatementStack(this).back();
+        getDoStatementStack(this).pop_back();
+        statement->setCondition(dynamic_pointer_cast<AST::Expression>($5.node), AST::DoStatement::ConditionType::LoopWhile);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($2.node);
+        $$ = ParserValueType(statement);
     }
-    | Do codeBlockWithNewLine Loop Until expression
+    | doStatementStart codeBlockWithNewLine Loop Until expression
     {
-        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
-                                                       dynamic_pointer_cast<AST::Expression>($5.node),
-                                                       AST::DoStatement::ConditionType::LoopUntil,
-                                                       dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+        shared_ptr<AST::DoStatement> statement = getDoStatementStack(this).back();
+        getDoStatementStack(this).pop_back();
+        statement->setCondition(dynamic_pointer_cast<AST::Expression>($5.node), AST::DoStatement::ConditionType::LoopUntil);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($2.node);
+        $$ = ParserValueType(statement);
     }
-    | Do codeBlockWithNewLine Loop
+    | doStatementStart codeBlockWithNewLine Loop
     {
-        $$ = ParserValueType(AST::DoStatement::make($1.token.location,
-                                                    nullptr,
-                                                    AST::DoStatement::ConditionType::None,
-                                                    dynamic_pointer_cast<AST::CodeBlock>($2.node)));
+        shared_ptr<AST::DoStatement> statement = getDoStatementStack(this).back();
+        getDoStatementStack(this).pop_back();
+        statement->setCondition(nullptr, AST::DoStatement::ConditionType::None);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($2.node);
+        $$ = ParserValueType(statement);
     }
-    | While expression codeBlockWithNewLine WEnd
+    | whileStatementStart expression codeBlockWithNewLine WEnd
     {
-        $$ = ParserValueType(AST::WhileStatement::make($1.token.location,
-                                                       dynamic_pointer_cast<AST::Expression>($2.node),
-                                                       dynamic_pointer_cast<AST::CodeBlock>($3.node)));
+        shared_ptr<AST::WhileStatement> statement = getWhileStatementStack(this).back();
+        getWhileStatementStack(this).pop_back();
+        statement->setCondition(dynamic_pointer_cast<AST::Expression>($2.node));
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($2.node);
+        $$ = ParserValueType(statement);
     }
-    | For expression_no_equals '=' expression To expression codeBlockWithNewLine Next
+    | forStatementStart expression_no_equals '=' expression To expression codeBlockWithNewLine Next
     {
-        $$ = ParserValueType(AST::ForStatement::make($1.token.location,
-                                                     dynamic_pointer_cast<AST::Expression>($2.node),
-                                                     dynamic_pointer_cast<AST::Expression>($4.node),
-                                                     dynamic_pointer_cast<AST::Expression>($6.node),
-                                                     nullptr,
-                                                     dynamic_pointer_cast<AST::CodeBlock>($7.node)));
+        shared_ptr<AST::ForStatement> statement = getForStatementStack(this).back();
+        getForStatementStack(this).pop_back();
+        statement->variable = dynamic_pointer_cast<AST::Expression>($2.node);
+        statement->start = dynamic_pointer_cast<AST::Expression>($4.node);
+        statement->end = dynamic_pointer_cast<AST::Expression>($6.node);
+        statement->step = nullptr;
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($7.node);
+        statement->calcTypes();
+        $$ = ParserValueType(statement);
     }
-    | For expression_no_equals '=' expression To expression Step expression codeBlockWithNewLine Next
+    | forStatementStart expression_no_equals '=' expression To expression Step expression codeBlockWithNewLine Next
     {
-        $$ = ParserValueType(AST::ForStatement::make($1.token.location,
-                                                     dynamic_pointer_cast<AST::Expression>($2.node),
-                                                     dynamic_pointer_cast<AST::Expression>($4.node),
-                                                     dynamic_pointer_cast<AST::Expression>($6.node),
-                                                     dynamic_pointer_cast<AST::Expression>($8.node),
-                                                     dynamic_pointer_cast<AST::CodeBlock>($9.node)));
+        shared_ptr<AST::ForStatement> statement = getForStatementStack(this).back();
+        getForStatementStack(this).pop_back();
+        statement->variable = dynamic_pointer_cast<AST::Expression>($2.node);
+        statement->start = dynamic_pointer_cast<AST::Expression>($4.node);
+        statement->end = dynamic_pointer_cast<AST::Expression>($6.node);
+        statement->step = dynamic_pointer_cast<AST::Expression>($8.node);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($9.node);
+        statement->calcTypes();
+        $$ = ParserValueType(statement);
     }
     | forDim declarationPartWithInitializer To expression codeBlockWithNewLine Next
     {
@@ -621,13 +658,15 @@ statement: ifStatement {$$ = $1;}
         shared_ptr<AST::Expression> start = variable->initializer();
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
         assert(!sts.empty());
-        shared_ptr<AST::ForStatement> forStatement = AST::ForStatement::make($1.token.location,
-                                                     variable,
-                                                     start,
-                                                     dynamic_pointer_cast<AST::Expression>($4.node),
-                                                     nullptr,
-                                                     dynamic_pointer_cast<AST::CodeBlock>($5.node));
-        shared_ptr<AST::CodeBlock> block = AST::CodeBlock::make($1.token.location, sts.back(), vector<shared_ptr<AST::Statement>>{forStatement});
+        shared_ptr<AST::ForStatement> statement = getForStatementStack(this).back();
+        getForStatementStack(this).pop_back();
+        statement->variable = variable;
+        statement->start = start;
+        statement->end = dynamic_pointer_cast<AST::Expression>($4.node);
+        statement->step = nullptr;
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($5.node);
+        statement->calcTypes();
+        shared_ptr<AST::CodeBlock> block = AST::CodeBlock::make($1.token.location, sts.back(), vector<shared_ptr<AST::Statement>>{statement});
         sts.pop_back();
         $$ = ParserValueType(block);
     }
@@ -638,19 +677,21 @@ statement: ifStatement {$$ = $1;}
         shared_ptr<AST::Expression> start = variable->initializer();
         vector<shared_ptr<AST::SymbolTable>> &sts = getSymbolTableStack(this);
         assert(!sts.empty());
-        shared_ptr<AST::ForStatement> forStatement = AST::ForStatement::make($1.token.location,
-                                                     variable,
-                                                     start,
-                                                     dynamic_pointer_cast<AST::Expression>($4.node),
-                                                     dynamic_pointer_cast<AST::Expression>($6.node),
-                                                     dynamic_pointer_cast<AST::CodeBlock>($7.node));
-        shared_ptr<AST::CodeBlock> block = AST::CodeBlock::make($1.token.location, sts.back(), vector<shared_ptr<AST::Statement>>{forStatement});
+        shared_ptr<AST::ForStatement> statement = getForStatementStack(this).back();
+        getForStatementStack(this).pop_back();
+        statement->variable = variable;
+        statement->start = start;
+        statement->end = dynamic_pointer_cast<AST::Expression>($4.node);
+        statement->step = dynamic_pointer_cast<AST::Expression>($6.node);
+        statement->body = dynamic_pointer_cast<AST::CodeBlock>($7.node);
+        statement->calcTypes();
+        shared_ptr<AST::CodeBlock> block = AST::CodeBlock::make($1.token.location, sts.back(), vector<shared_ptr<AST::Statement>>{statement});
         sts.pop_back();
         $$ = ParserValueType(block);
     }
     ;
 
-forDim: For Dim {$$ = $1; getSymbolTableStack(this).push_back(AST::SymbolTable::make());}
+forDim: forStatementStart Dim {$$ = $1; getSymbolTableStack(this).push_back(AST::SymbolTable::make());}
     ;
 
 inlineStatement: expression_no_equals '=' expression
@@ -662,12 +703,55 @@ inlineStatement: expression_no_equals '=' expression
         }
         $$ = ParserValueType(AST::AssignStatement::make($2.token.location, dynamic_pointer_cast<AST::Expression>($1.node), dynamic_pointer_cast<AST::Expression>($3.node)));
     }
-    | Exit Do {handleErrorNotImplemented($1.token.location, L"Exit Do");}
-    | Exit While {handleErrorNotImplemented($1.token.location, L"Exit While");}
-    | Exit For {handleErrorNotImplemented($1.token.location, L"Exit For");}
-    | Exit subOrFunction 
+    | Exit Do
     {
-        handleErrorNotImplemented($1.token.location, L"Exit " + $2.token.svalue);
+        auto &loopStack = getDoStatementStack(this);
+        shared_ptr<AST::DoStatement> statement = nullptr;
+        if(!loopStack.empty())
+            statement = loopStack.back();
+        if(statement == nullptr)
+            ::handleError($1.token.location, L"Exit " + $2.token.svalue + L" not inside a " + $2.token.svalue + L" loop");
+        $$ = ParserValueType(AST::ExitDoStatement::make($1.token.location, statement));
+    }
+    | Exit While
+    {
+        auto &loopStack = getWhileStatementStack(this);
+        shared_ptr<AST::WhileStatement> statement = nullptr;
+        if(!loopStack.empty())
+            statement = loopStack.back();
+        if(statement == nullptr)
+            ::handleError($1.token.location, L"Exit " + $2.token.svalue + L" not inside a " + $2.token.svalue + L" loop");
+        $$ = ParserValueType(AST::ExitWhileStatement::make($1.token.location, statement));
+    }
+    | Exit For
+    {
+        auto &loopStack = getForStatementStack(this);
+        shared_ptr<AST::ForStatement> statement = nullptr;
+        if(!loopStack.empty())
+            statement = loopStack.back();
+        if(statement == nullptr)
+            ::handleError($1.token.location, L"Exit " + $2.token.svalue + L" not inside a " + $2.token.svalue + L" loop");
+        $$ = ParserValueType(AST::ExitForStatement::make($1.token.location, statement));
+    }
+    | Exit subOrFunction
+    {
+        shared_ptr<AST::Procedure> procedure = getContainingProcedure(this);
+        if(procedure == nullptr)
+            ::handleError($1.token.location, L"Exit " + $2.token.svalue + L" not inside a " + $2.token.svalue + L" definition");
+        TokenType ttype = TokenType::TTEOF;
+        switch(procedure->type()->procedureType)
+        {
+        case AST::TypeProcedure::ProcedureType::Sub:
+            ttype = TokenType::TTSub;
+            break;
+        case AST::TypeProcedure::ProcedureType::Function:
+            ttype = TokenType::TTFunction;
+            break;
+        }
+        assert(ttype != TokenType::TTEOF);
+        if(ttype != $2.token.type)
+            ::handleError($1.token.location, L"Exit " + $2.token.svalue + L" not inside a " + $2.token.svalue + L" definition");
+        $$ = ParserValueType(AST::ExitProcedureStatement::make($1.token.location, procedure));
     }
     | expression_no_equals {$$ = $1;}
     ;
@@ -1121,6 +1205,9 @@ public:
     vector<shared_ptr<AST::SymbolTable>> symbolTableStack;
     Location lastTokenLocation;
     vector<shared_ptr<AST::Procedure>> procedureStack;
+    vector<shared_ptr<AST::DoStatement>> doStatementStack;
+    vector<shared_ptr<AST::ForStatement>> forStatementStack;
+    vector<shared_ptr<AST::WhileStatement>> whileStatementStack;
 protected:
     virtual ParserValueType getToken() override
     {
@@ -1172,6 +1259,27 @@ void popContainingProcedure(ParserBase *parser)
     assert(theParser != nullptr);
     assert(!theParser->procedureStack.empty());
     theParser->procedureStack.pop_back();
+}
+
+vector<shared_ptr<AST::DoStatement>> &getDoStatementStack(ParserBase *parser)
+{
+    Parser *theParser = dynamic_cast<Parser *>(parser);
+    assert(theParser != nullptr);
+    return theParser->doStatementStack;
+}
+
+vector<shared_ptr<AST::ForStatement>> &getForStatementStack(ParserBase *parser)
+{
+    Parser *theParser = dynamic_cast<Parser *>(parser);
+    assert(theParser != nullptr);
+    return theParser->forStatementStack;
+}
+
+vector<shared_ptr<AST::WhileStatement>> &getWhileStatementStack(ParserBase *parser)
+{
+    Parser *theParser = dynamic_cast<Parser *>(parser);
+    assert(theParser != nullptr);
+    return theParser->whileStatementStack;
 }
 
 %}
