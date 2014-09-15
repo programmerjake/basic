@@ -243,7 +243,7 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         didIndent = true;
         os() << "(";
         node->args()[0]->writeCode(*this);
-        os() << ").lbound(1L)";
+        os() << ")->lbound(1L)";
         return;
     case AST::BuiltInFunctionExpression::FnType::LBound2:
         if(!didIndent)
@@ -251,7 +251,7 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         didIndent = true;
         os() << "(";
         node->args()[0]->writeCode(*this);
-        os() << ").lbound(";
+        os() << ")->lbound(";
         node->args()[1]->writeCode(*this);
         os() << ")";
         return;
@@ -415,7 +415,7 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         didIndent = true;
         os() << "(";
         node->args()[0]->writeCode(*this);
-        os() << ").ubound(1L)";
+        os() << ")->ubound(1L)";
         return;
     case AST::BuiltInFunctionExpression::FnType::UBound2:
         if(!didIndent)
@@ -423,7 +423,7 @@ void CodeWriterC::visitBuiltInFunctionExpression(shared_ptr<const AST::BuiltInFu
         didIndent = true;
         os() << "(";
         node->args()[0]->writeCode(*this);
-        os() << ").ubound(";
+        os() << ")->ubound(";
         node->args()[1]->writeCode(*this);
         os() << ")";
         return;
@@ -932,7 +932,7 @@ void CodeWriterC::visitCodeBlock(shared_ptr<const AST::CodeBlock> node)
         os() << indent << "T *ptr = atHelper(args...);\n";
         os() << indent << "constexpr size_t indexNumber = N - (sizeof...(args) + 1);\n";
         os() << indent << "assert((size_t)(index - base[indexNumber]) < size[indexNumber]);\n";
-        os() << indent << "return ptr + (arrayIndexSize(indexNumber) * (index - base[indexNumber]));\n";
+        os() << indent << "return ptr + (arrayIndexSize(indexNumber + 1) * (index - base[indexNumber]));\n";
         indent.depth--;
         os() << indent << "}\n";
         os() << indent << "inline T * atHelper() const\n";
@@ -1544,6 +1544,23 @@ void CodeWriterC::visitProcedure(shared_ptr<const AST::Procedure> node)
         isDeclaration = true;
         declarationTypeAfterVariable = "";
         functionArguments = &node->args();
+        vector<shared_ptr<AST::Variable>> args;
+        if(node->code == nullptr && node->actualName() != L"")
+        {
+            args.reserve(node->type()->args.size());
+            for(shared_ptr<const AST::Type> arg : node->type()->args)
+            {
+                if(arg->isLValue())
+                {
+                    args.push_back(AST::ReferenceVariable::make(node->location(), const_pointer_cast<AST::Procedure>(node), arg, string_cast<wstring>(makeTempVariable()), nullptr, true));
+                }
+                else
+                {
+                    args.push_back(AST::AutoVariable::make(node->location(), const_pointer_cast<AST::Procedure>(node), AST::TypeReference::toLValue(arg), string_cast<wstring>(makeTempVariable()), nullptr, true));
+                }
+            }
+            functionArguments = &args;
+        }
         node->type()->writeCode(*this);
         functionArguments = nullptr;
         isImplementation = false;
@@ -1584,6 +1601,26 @@ void CodeWriterC::visitProcedure(shared_ptr<const AST::Procedure> node)
             indent.depth--;
             os() << indent << "}\n";
             canSkipSemicolon = true;
+        }
+        else if(node->actualName() != L"")
+        {
+            os() << "\n";
+            os() << indent << "{\n";
+            didIndent = false;
+            indent.depth++;
+            os() << indent;
+            if(AST::TypeProcedure::getProcedureHasReturnValue(node->type()->procedureType))
+                os() << "return ";
+            os() << string_cast<string>(node->actualName()) << "(";
+            string seperator = "";
+            for(shared_ptr<AST::Variable> variable : args)
+            {
+                os() << seperator << string_cast<string>(createVariableName(variable));
+                seperator = ", ";
+            }
+            os() << ");\n";
+            indent.depth--;
+            os() << indent << "}\n";
         }
         else
         {

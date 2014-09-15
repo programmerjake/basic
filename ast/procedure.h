@@ -22,6 +22,9 @@ class Procedure final : public Expression
 public:
     std::shared_ptr<CodeBlock> code;
     std::shared_ptr<Variable> returnValue;
+private:
+    std::wstring actualName_;
+public:
     const std::vector<std::shared_ptr<Variable>> &args() const
     {
         return args_;
@@ -29,6 +32,14 @@ public:
     std::wstring name() const
     {
         return name_;
+    }
+    std::wstring actualName() const
+    {
+        return actualName_;
+    }
+    void actualName(std::wstring v)
+    {
+        actualName_ = v;
     }
     std::shared_ptr<const TypeProcedure> type() const
     {
@@ -40,25 +51,32 @@ public:
     }
 private:
     Procedure(Location location, const std::wstring &name, std::shared_ptr<const TypeProcedure> type, std::vector<std::shared_ptr<Variable>> args, std::shared_ptr<CodeBlock> code, std::shared_ptr<Variable> returnValue)
-        : Expression(location, type), args_(args), name_(name), code(code), returnValue(returnValue)
+        : Expression(location, type), args_(args), name_(name), code(code), returnValue(returnValue), actualName_(L"")
     {
-        if(code != nullptr)
-        {
-            assert(args.size() == type->args.size());
-        }
-        else
-        {
-            assert(args.empty());
-        }
+        assert(args.size() <= type->args.size());
         for(std::shared_ptr<Variable> v : args)
         {
-            assert(v->isFunctionArgument());
+            if(v != nullptr)
+                assert(v->isFunctionArgument());
+        }
+    }
+    Procedure(Location location, const std::wstring &name, std::shared_ptr<const TypeProcedure> type, std::vector<std::shared_ptr<Variable>> args, std::wstring actualName, std::shared_ptr<Variable> returnValue)
+        : Expression(location, type), args_(args), name_(name), code(nullptr), returnValue(returnValue), actualName_(actualName)
+    {
+        for(std::shared_ptr<Variable> v : args)
+        {
+            if(v != nullptr)
+                assert(v->isFunctionArgument());
         }
     }
 public:
     static std::shared_ptr<Procedure> make(Location location, const std::wstring &name, std::shared_ptr<const TypeProcedure> type, std::vector<std::shared_ptr<Variable>> args, std::shared_ptr<CodeBlock> code, std::shared_ptr<Variable> returnValue)
     {
         return std::shared_ptr<Procedure>(new Procedure(location, name, type, args, code, returnValue));
+    }
+    static std::shared_ptr<Procedure> make(Location location, const std::wstring &name, std::shared_ptr<const TypeProcedure> type, std::vector<std::shared_ptr<Variable>> args, std::nullptr_t, std::shared_ptr<Variable> returnValue, std::wstring actualName)
+    {
+        return std::shared_ptr<Procedure>(new Procedure(location, name, type, args, actualName, returnValue));
     }
     virtual void writeCode(CodeWriter &cw) const override; // in statements.cpp
 };
