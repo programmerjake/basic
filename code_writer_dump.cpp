@@ -414,7 +414,7 @@ void CodeWriterDump::visitTypeArray(shared_ptr<const AST::TypeArray> node)
         if(AST::TypeArray::isEmptyRange(ir))
             os() << "Any\n";
         else
-            os() << std::get<0>(ir) << " To " << std::get<1>(ir) << "\n";
+            os() << ir.start << " To " << ir.end << "\n";
     }
     indent.depth--;
     os() << indent << "TypeArray.elementType:\n";

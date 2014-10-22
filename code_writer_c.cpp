@@ -1868,7 +1868,7 @@ void CodeWriterC::visitTypeArray(shared_ptr<const AST::TypeArray> node)
             }
             for(AST::TypeArray::IndexRange ir : node->indexRanges())
             {
-                os() << ", " << std::get<0>(ir) << ", " << AST::TypeArray::getRangeSize(ir);
+                os() << ", " << ir.start << ", " << AST::TypeArray::getRangeSize(ir);
             }
             os() << "))";
         }

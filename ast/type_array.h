@@ -12,15 +12,37 @@
 
 namespace AST
 {
+class TypeArrayIndexRange final
+{
+public:
+    std::int64_t start, end;
+    constexpr TypeArrayIndexRange(std::int64_t start, std::int64_t end)
+    : start(start), end(end)
+    {
+    }
+    constexpr TypeArrayIndexRange()
+        : start(2), end(0)
+    {
+    }
+    constexpr bool operator ==(TypeArrayIndexRange rt) const
+    {
+        return start == rt.start && end == rt.end;
+    }
+    constexpr bool operator !=(TypeArrayIndexRange rt) const
+    {
+        return start != rt.start || end != rt.end;
+    }
+};
+
 class TypeArray final : public Type
 {
 public:
-    typedef std::pair<std::int64_t, std::int64_t> IndexRange;
+    typedef TypeArrayIndexRange IndexRange;
     static constexpr IndexRange defaultEmptyRange = IndexRange(2, 0); // definition in type_builtin.cpp
     static constexpr std::int64_t defaultRangeStart = 1; // definition in type_builtin.cpp
     static constexpr std::int64_t getRangeSize(IndexRange ir)
     {
-        return std::get<1>(ir) - std::get<0>(ir) + 1;
+        return ir.end - ir.start + 1;
     }
     static constexpr bool isEmptyRange(IndexRange ir)
     {
@@ -93,9 +115,9 @@ public:
                 seperator = L", ";
                 if(!isEmptyRange(ir))
                 {
-                    if(std::get<0>(ir) != defaultRangeStart)
-                        ss << std::get<0>(ir) << L" To ";
-                    ss << std::get<1>(ir);
+                    if(ir.start != defaultRangeStart)
+                        ss << ir.start << L" To ";
+                    ss << ir.end;
                 }
             }
             ss << L")";

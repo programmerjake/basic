@@ -332,6 +332,57 @@ class Tokenizer final
             return true;
         return false;
     }
+    static bool iswdigit(int v)
+    {
+        if(v >= '0' && v <= '9')
+            return true;
+        return false;
+    }
+    static bool iswlower(int v)
+    {
+        return v >= 'a' && v <= 'z';
+    }
+    static bool iswupper(int v)
+    {
+        return v >= 'A' && v <= 'Z';
+    }
+    static bool iswalpha(int v)
+    {
+        return iswlower(v) || iswupper(v);
+    }
+    static bool iswalnum(int v)
+    {
+        return iswalpha(v) || iswdigit(v);
+    }
+    static bool iswblank(int v)
+    {
+        switch(v)
+        {
+        case ' ':
+        case '\t':
+            return true;
+        default:
+            return false;
+        }
+    }
+    static bool iswspace(int v)
+    {
+        switch(v)
+        {
+        case ' ':
+        case '\t':
+        case '\n':
+        case '\r':
+        case '\f':
+        case '\v':
+        case L'\u00A0':
+        case L'\u2007':
+        case L'\u202F':
+            return true;
+        default:
+            return false;
+        }
+    }
     Token readLiteralType(Token token)
     {
         if(token.type != TokenType::TTIntegerLiteral)
@@ -645,6 +696,13 @@ public:
                     return Token(TokenType::TTEOF, tokenLocation);
                 gotEof = true;
                 return Token((TokenType)'\n', tokenLocation, L"\n");
+            case L'\u00A0':
+            case L'\u2007':
+            case L'\u202F':
+            {
+                wchar_t ch = getChar();
+                return Token((TokenType)'\n', tokenLocation, std::wstring(1, ch));
+            }
             case '\n':
             case '(':
             case ')':
@@ -712,7 +770,7 @@ public:
                     nextChar();
                 continue;
             default:
-                handleError(location, L"invalid character");
+                handleError(location, L"invalid character : " + std::wstring(1, (wchar_t)peekChar));
                 return Token(TokenType::TTEOF, tokenLocation);
             }
             assert(false);

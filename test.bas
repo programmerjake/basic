@@ -54,6 +54,7 @@ End Sub
 Function getDitherValue(x As Integer, y As Integer) As Single
     x = CInt(CU64(x) Mod 16_u64)
     y = CInt(CU64(y) Mod 16_u64)
+    x = x Xor y
     Dim v As Integer = 0
     If (x And &H1) <> 0 Then
         v = v Or &H80
