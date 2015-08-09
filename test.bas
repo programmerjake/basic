@@ -37,8 +37,8 @@ Sub WriteDouble(v As Double)
     WriteString(Str(v))
 End Sub
 
-Dim text As Array(320, 200) Of Integer
-Dim picture As Array(320, 200) Of Single
+Dim text As Array(160, 100) Of Integer
+Dim picture As Array(160, 100) Of Single
 
 Sub WriteAllText()
     For Dim y = LBound(text, 2) To UBound(text, 2)
