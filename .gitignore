@@ -1,9 +1,0 @@
-*.layout
-*.depend
-*~
-*.parser.h
-*.parser.cpp
-bin
-obj
-ValgrindOut.xml
-*.bas.cpp
